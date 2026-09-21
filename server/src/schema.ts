@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, index, integer, date, primaryKey, uniqueIndex, check } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(), name: text('name').notNull(), email: text('email').notNull().unique(),
@@ -24,3 +25,31 @@ export const verification = pgTable('verification', {
   expiresAt: timestamp('expires_at').notNull(), createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (t) => [index('verification_identifier_idx').on(t.identifier)]);
+
+
+export const friendship = pgTable('friendship', {
+  id: text('id').primaryKey(),
+  requester: text('requester').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  recipient: text('recipient').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  status: text('status').notNull().default('pending'),
+}, t => [
+  uniqueIndex('friendship_pair').on(sql`least(${t.requester}, ${t.recipient})`, sql`greatest(${t.requester}, ${t.recipient})`),
+  check('friendship_not_self', sql`${t.requester} <> ${t.recipient}`),
+  check('friendship_status', sql`${t.status} in ('pending', 'accepted')`),
+]);
+export const stepGroup = pgTable('step_group', {
+  id: text('id').primaryKey(), name: text('name').notNull(), code: text('code').notNull().unique(),
+});
+export const groupMember = pgTable('group_member', {
+  groupId: text('group_id').notNull().references(() => stepGroup.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+}, t => [primaryKey({ columns: [t.groupId, t.userId] })]);
+export const stepSharing = pgTable('step_sharing', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  enabled: boolean('enabled').notNull().default(false),
+});
+export const sharedSteps = pgTable('shared_steps', {
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  date: date('date').notNull(), steps: integer('steps').notNull(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.userId, t.date] }), check('non_negative_steps', sql`${t.steps} >= 0`)]);

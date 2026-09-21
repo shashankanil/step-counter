@@ -20,13 +20,13 @@ test('health is public; profile and future social routes require a session', asy
     assert.equal((await app.request(route, { headers: { Authorization: 'Bearer invalid' } })).status, 401);
   }
 });
-test('me exposes profile but never session token or steps; stubs return 501', async () => {
+test('me exposes profile but never session token or steps; unavailable database returns 503', async () => {
   const headers = { Authorization: 'Bearer valid' };
   const response = await app.request('/api/me', { headers });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('cache-control'), 'no-store');
   assert.deepEqual(await response.json(), { user: { id: 'u1', name: 'Test Walker', email: 'walker@example.com', image: null }, syncEnabled: false });
-  for (const route of ['/api/friends', '/api/leaderboard']) assert.equal((await app.request(route, { headers })).status, 501);
+  for (const route of ['/api/friends', '/api/leaderboard']) assert.equal((await app.request(route, { headers })).status, 503);
 });
 test('auth responses preserve bearer header', async () => {
   const response = await app.request('/api/auth/sign-in/social', { method: 'POST' });

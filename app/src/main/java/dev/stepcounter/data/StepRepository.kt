@@ -11,7 +11,7 @@ import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.ZoneId
 
-class StepRepository(context: Context) {
+class StepRepository(private val context: Context) {
     private val auth = dev.stepcounter.data.auth.AuthRepository(context)
     private val db = StepDatabase.get(context)
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -59,6 +59,12 @@ class StepRepository(context: Context) {
         }
         prefs.edit().putString("zone", zone.id).apply()
         status(if (health.backgroundPermission in permissions) "Synced · Health Connect" else "Synced · refresh in app")
+        try {
+            val social = dev.stepcounter.data.social.SocialRepository(context)
+            social.sync(snapshot())
+            if (social.target.isNotBlank()) social.compare()
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (_: Exception) { /* Cloud failure must not fail local Health Connect sync. */ }
         true
     }
     fun status(value: String) { prefs.edit().putString("status", value).apply() }

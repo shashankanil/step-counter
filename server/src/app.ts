@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
+import type { Pool } from 'pg';
+import { socialRoutes, type SocialEnv } from './social.js';
 import type { createAuth } from './auth.js';
 
 type Auth = ReturnType<typeof createAuth>;
-export function createApp(auth: Pick<Auth, 'handler'> & { api: Pick<Auth['api'], 'getSession'> }) {
-  const app = new Hono();
+export function createApp(auth: Pick<Auth, 'handler'> & { api: Pick<Auth['api'], 'getSession'> }, pool?: Pool) {
+  const app = new Hono<SocialEnv>();
   app.onError((_error, c) => c.json({ error: 'Internal server error' }, 500));
   app.get('/health', (c) => c.json({ status: 'ok', service: 'step-counter', phase: 3 }));
   app.use('/api/*', async (c, next) => {
@@ -17,12 +19,14 @@ export function createApp(auth: Pick<Auth, 'handler'> & { api: Pick<Auth['api'],
     const { id, name, email, image } = session.user;
     return c.json({ user: { id, name, email, image }, syncEnabled: false });
   });
-  for (const path of ['/api/friends', '/api/leaderboard']) {
-    app.get(path, async (c) => {
-      const session = await auth.api.getSession({ headers: c.req.raw.headers });
-      if (!session) return c.json({ error: 'Unauthorized' }, 401);
-      return c.json({ error: 'Not implemented', phase: 4 }, 501);
-    });
-  }
+  app.use('/api/*', async (c, next) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session) return c.json({ error: 'Unauthorized' }, 401);
+    if (!pool) return c.json({ error: 'Social database unavailable' }, 503);
+    // The social subrouter consumes this authenticated identity only.
+    c.set('userId', session.user.id);
+    await next();
+  });
+  if (pool) app.route('/api', socialRoutes(pool));
   return app;
 }

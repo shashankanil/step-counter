@@ -55,7 +55,7 @@ import dev.stepcounter.widgets.WidgetKind
                     Row(Modifier.navigationBarsPadding().padding(horizontal = 18.dp, vertical = 10.dp)
                         .fillMaxWidth().background(Color(Design.Surface), CircleShape).padding(5.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly) {
-                        listOf("Today", "History", "Widgets", "You").forEach { tab ->
+                        listOf("Today", "History", "Widgets", "Social", "You").forEach { tab ->
                             TextButton(onClick = {
                                 nav.navigate(tab) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true }
                             }, modifier = Modifier.weight(1f).semantics { selected = route == tab },
@@ -78,6 +78,7 @@ import dev.stepcounter.widgets.WidgetKind
                         composable("Today") { TodayScreen(state, { model.refresh() }, { goalOpen = true }, { nav.navigate("You") }) }
                         composable("History") { HistoryScreen(state.summary) }
                         composable("Widgets") { WidgetsScreen(state.summary, pin) }
+                        composable("Social") { SocialScreen(androidx.lifecycle.viewmodel.compose.viewModel(key = state.account?.email ?: "local")) }
                         composable("You") { YouScreen(state, model, connect, { goalOpen = true }, { nav.navigate("Privacy") }) }
                         composable("Privacy") { PrivacyContent { nav.popBackStack() } }
                     }

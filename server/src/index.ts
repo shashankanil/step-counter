@@ -6,7 +6,7 @@ import { createApp } from './app.js';
 
 const env = loadEnv();
 const pool = new pg.Pool({ connectionString: env.databaseUrl });
-const app = createApp(createAuth(env, pool));
+const app = createApp(createAuth(env, pool), pool);
 const server = serve({ fetch: app.fetch, port: env.port, hostname: '0.0.0.0' });
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   process.on(signal, () => {
