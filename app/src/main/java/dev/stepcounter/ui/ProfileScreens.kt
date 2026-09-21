@@ -17,18 +17,22 @@ import dev.stepcounter.widgets.WidgetKind
 
 @Composable fun WidgetsScreen(summary: StepSummary, pin: (WidgetKind) -> Unit) {
     Page {
-        Heading("At a glance", "One widget.\nYour whole rhythm.")
-        Text("Swipe up or down to move between Walk, Stats, Month and Comparison. Tap any page to open Step Counter.", color = Color(Design.Grey))
-        val pager = androidx.compose.foundation.pager.rememberPagerState(pageCount = { WidgetKind.entries.size })
+        Heading("Home screen", "Movement, at a glance.")
+        Text("Four quiet pages: Walk, Stats, Month and Compare. Use the up/down arrows on your home screen tile. Tap the artwork to open the app.", color = Color(Design.Grey))
+        val pager = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 4 })
         androidx.compose.foundation.pager.VerticalPager(state = pager, modifier = Modifier.fillMaxWidth().height(300.dp)) { index ->
             WidgetPreview(WidgetKind.entries[index], summary, Modifier.fillMaxHeight())
         }
         Text("${pager.currentPage + 1} / 4 · ${WidgetKind.entries[pager.currentPage].title}", color = Color(Design.Grey))
         Action("Add Step Counter widget") { pin(WidgetKind.WALK) }
+        HorizontalDivider()
+        Heading("Circle", "Just your next step.")
+        WidgetPreview(WidgetKind.CIRCLE, summary, Modifier.fillMaxWidth(.75f))
+        Action("Add Circle widget") { pin(WidgetKind.CIRCLE) }
         Tile {
             Eyebrow("Keep movement in sight")
-            Text("Confirm in your launcher, then swipe vertically through the pages. Touch and hold to resize.")
-            Text("No pin support? Long-press your home screen → Widgets → Step Counter. Start at 2 × 2. Select a friend or group in Social for the Comparison page. Updates follow your latest sync.", color = Color(Design.Grey), fontSize = 13.sp)
+            Text("Touch and hold in your launcher to resize from 2 × 2 to around 4 × 4. Artwork redraws for the available size; rectangular spaces keep the tile square.")
+            Text("No pin support? Long-press your home screen → Widgets → Step Counter. Start at 2 × 2. Select a friend or group in Together for the Comparison page. Updates follow your latest sync.", color = Color(Design.Grey), fontSize = 13.sp)
         }
     }
 }
@@ -74,7 +78,7 @@ import dev.stepcounter.widgets.WidgetKind
         }
         Tile { Eyebrow("Private by design"); Text("Optional account.\nSharing is your choice.", fontSize = 23.sp); TextButton(privacy) { Text("Privacy & permissions ↗") } }
         Eyebrow("Step / Counter   ·   0.2.0")
-        Text("Original dot artwork. Built for a quieter relationship with movement. No ads or analytics. Walk together in Social when you choose to share.", color = Color(Design.Grey), fontSize = 12.sp)
+        Text("Original dot artwork. Built for a quieter relationship with movement. No ads or analytics. Walk together in Together when you choose to share.", color = Color(Design.Grey), fontSize = 12.sp)
     }
 
 }
@@ -92,7 +96,7 @@ import dev.stepcounter.widgets.WidgetKind
                 Action(if (model.repository.health.readPermission in state.permissions) "Connected" else "Connect Health Connect", !state.busy) { connect(false) }
             }
             1 -> { Tile { Eyebrow("Daily goal"); Matrix(state.summary.goal.toLong()); Action("Set your goal", onClick = goal) }; Text("Start with something achievable. Change it any time in You.", color = Color(Design.Grey)) }
-            else -> { WidgetPreview(WidgetKind.STATS, state.summary, Modifier.fillMaxWidth(.8f)); Action("Add Step Counter widget") { pin(WidgetKind.STATS) }; Text("Your launcher will ask you to confirm. Swipe vertically through all four pages of the same widget.", color = Color(Design.Grey)) }
+            else -> { WidgetPreview(WidgetKind.STATS, state.summary, Modifier.fillMaxWidth(.8f)); Action("Add Step Counter widget") { pin(WidgetKind.STATS) }; Text("Your launcher will ask you to confirm. Use the arrows to flip through all four pages of the same widget.", color = Color(Design.Grey)) }
         }
         Action(if (page == 2) "Let's walk →" else if (page == 0) "Continue →" else "Keep this goal →") { if (page < 2) page++ else model.finishSetup() }
         TextButton({ model.finishSetup() }) { Text("Set up later") }
@@ -106,14 +110,14 @@ import dev.stepcounter.widgets.WidgetKind
     Page {
         Heading("Privacy & permissions", "Your steps.\nYour choice.")
         Tile { Eyebrow("Read only"); Text("Step Counter reads step totals from Health Connect to show today's progress, a seven-day average and a monthly calendar. Optional background access refreshes your widgets when the app is closed.") }
-        Tile { Eyebrow("On this device"); Text("Daily totals stay in a local Room database until you explicitly opt into sync. Enable step sharing in Social to upload daily totals for comparisons. Accepted friends and fellow group members can view shared totals. Turning sharing off deletes cloud totals when connected; offline deletion remains pending until you reconnect. An account is optional. Google sign-in shares your identity with Google and, when connected, our account service; it never uploads steps. Sign-in tokens are encrypted on this device. Comparisons are cached locally with their fetch time. No advertising or analytics. Android backup is disabled. No data is written to Health Connect.") }
+        Tile { Eyebrow("On this device"); Text("Daily totals stay in a local Room database until you explicitly opt into sync. Enable step sharing in Together to upload daily totals for comparisons. Accepted friends and fellow group members can view shared totals. Turning sharing off deletes cloud totals when connected; offline deletion remains pending until you reconnect. An account is optional. Google sign-in shares your identity with Google and, when connected, our account service; it never uploads steps. Sign-in tokens are encrypted on this device. Comparisons are cached locally with their fetch time. No advertising or analytics. Android backup is disabled. No data is written to Health Connect.") }
         Tile { Eyebrow("Always in your control"); Text("Revoke permissions in Health Connect at any time. Detected step-permission revocation clears the local cache on the next sync. Clear this app's storage or uninstall to remove all local settings and totals immediately.") }
         Tile { Eyebrow("Reading the dots"); Text("The seven-day average uses the previous seven completed days. Grey calendar dots show recorded activity, white dots mean the current goal was reached, and red marks today. Tiny dots indicate zero, unavailable or future data.") }
         Action("Done", onClick = done)
     }
 }
 
-@Composable private fun AccountTile(state: StepUiState, model: StepViewModel) {
+@Composable fun AccountTile(state: StepUiState, model: StepViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
     Tile {
         Eyebrow("Your optional account")
@@ -131,7 +135,7 @@ import dev.stepcounter.widgets.WidgetKind
         } else {
             Text(account.name, fontSize = 23.sp)
             Text(account.email, color = Color(Design.Grey))
-            Text(if (account.connected) "Account connected · manage step sharing in Social" else "Google profile saved locally · cloud sync needs a reachable backend", color = Color(Design.Grey), fontSize = 13.sp)
+            Text(if (account.connected) "Account connected · manage step sharing in Together" else "Google profile saved locally · cloud sync needs a reachable backend", color = Color(Design.Grey), fontSize = 13.sp)
             if (!account.connected && dev.stepcounter.BuildConfig.API_CONFIGURED)
                 Action("Connect account", !state.authBusy) { model.signIn(context) }
             TextButton({ model.signOut() }, enabled = !state.authBusy) { Text(if (state.authBusy) "Please wait…" else "Sign out") }

@@ -8,25 +8,11 @@ import java.text.NumberFormat
 import kotlin.math.*
 
 enum class WidgetKind(val title: String) {
-    WALK("Walk progress"), STATS("Stats stack"), MONTH("Month grid"), COMPARISON("Comparison")
+    WALK("Walk progress"), STATS("Stats"), MONTH("Month grid"), COMPARISON("Compare"), CIRCLE("Circle")
 }
 
 /** Original geometric artwork. No bundled typeface or third-party brand assets. */
 object WidgetArtwork {
-    val glyphs = mapOf(
-        '0' to "01110/10001/10011/10101/11001/10001/01110",
-        '1' to "00100/01100/00100/00100/00100/00100/01110",
-        '2' to "01110/10001/00001/00010/00100/01000/11111",
-        '3' to "11110/00001/00001/01110/00001/00001/11110",
-        '4' to "00010/00110/01010/10010/11111/00010/00010",
-        '5' to "11111/10000/10000/11110/00001/00001/11110",
-        '6' to "01110/10000/10000/11110/10001/10001/01110",
-        '7' to "11111/00001/00010/00100/01000/01000/01000",
-        '8' to "01110/10001/10001/01110/10001/10001/01110",
-        '9' to "01110/10001/10001/01111/00001/00001/01110",
-        ',' to "0/0/0/0/0/1/1", '-' to "000/000/000/111/000/000/000",
-        'S' to "0111/1000/1000/0110/0001/0001/1110"
-    )
     fun render(kind: WidgetKind, summary: StepSummary, size: Int = 480, comparison: org.json.JSONObject? = null, targetName: String = ""): Bitmap {
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val c = Canvas(bitmap)
@@ -39,19 +25,6 @@ object WidgetArtwork {
             p.color = color.toInt(); p.textSize = textSize; p.typeface = Typeface.create("sans-serif", Typeface.NORMAL)
             c.drawText(s, x, y, p)
         }
-        fun matrix(s: String, x: Float, y: Float, maxWidth: Float, pitch: Float = 3.5f) {
-            val patterns = s.map { glyphs[it] ?: glyphs.getValue('-') }
-            val columns = patterns.sumOf { it.substringBefore('/').length + 1 } - 1
-            val step = min(pitch, maxWidth / columns.coerceAtLeast(1))
-            var left = x
-            patterns.forEach { pattern ->
-                val rows = pattern.split('/')
-                rows.forEachIndexed { row, line -> line.forEachIndexed { col, char ->
-                    if (char == '1') dot(left + col * step, y + row * step, step * .33f)
-                } }
-                left += (rows[0].length + 1) * step
-            }
-        }
         fun figure(x: Float, y: Float, pitch: Float) {
             listOf(2 to 0, 3 to 0, 2 to 1, 3 to 1, 1 to 2, 2 to 2, 3 to 2,
                 0 to 3, 2 to 3, 4 to 3, 2 to 4, 2 to 5, 1 to 6, 3 to 6,
@@ -59,25 +32,32 @@ object WidgetArtwork {
                 dot(x + dx * pitch, y + dy * pitch, pitch * .39f)
             }
         }
-        fun pages(selected: Int) { repeat(4) { dot(191f, 82f + it * 12, 2.3f, if (it == selected) Design.White else Design.Grey) } }
         fun number(value: Long?) = value?.let { NumberFormat.getIntegerInstance(java.util.Locale.UK).format(it) } ?: "--"
         p.color = Design.Surface.toInt()
-        c.drawRoundRect(0f, 0f, 200f, 200f, 30f, 30f, p)
+        if (kind == WidgetKind.CIRCLE) c.drawCircle(100f, 100f, 100f, p)
+        else c.drawRoundRect(0f, 0f, 200f, 200f, 30f, 30f, p)
         when (kind) {
+            WidgetKind.CIRCLE -> {
+                p.style = Paint.Style.STROKE; p.strokeWidth = 2f
+                p.color = 0xFF383838.toInt(); c.drawCircle(100f, 100f, 78f, p)
+                p.color = Design.White.toInt(); p.strokeCap = Paint.Cap.ROUND
+                c.drawArc(22f, 22f, 178f, 178f, -90f, summary.progress * 360f, false, p)
+                p.style = Paint.Style.FILL
+                figure(88f, 68f, 5f)
+                label("${summary.percent}%", 87f, 140f, 12f)
+            }
             WidgetKind.WALK -> {
                 val x = 15f + summary.progress * 142f
                 repeat(21) { dot(12f + it * 8.3f, 100f, if (it < summary.progress * 20) 2f else 1f, if (it < summary.progress * 20) Design.White else Design.Grey) }
                 figure(x, 83f, 4.3f)
-                pages(0)
                 label("${summary.percent}%", 18f, 176f, 10f, Design.Grey)
             }
             WidgetKind.STATS -> {
-                matrix(number(summary.steps), 22f, 23f, 146f, 4f)
+                label(number(summary.steps), 18f, 48f, 29f)
                 label("TOTAL TODAY", 18f, 68f, 10f)
                 label("${summary.percent}%", 154f, 68f, 10f)
-                matrix(number(summary.average), 22f, 132f, 106f, 3.6f)
+                label(number(summary.average), 18f, 155f, 25f)
                 label("7-DAY AVERAGE", 18f, 179f, 9f)
-                pages(1)
             }
             WidgetKind.MONTH -> {
                 monthCells(summary.today).forEachIndexed { index, date ->
@@ -92,7 +72,6 @@ object WidgetArtwork {
                         dot(22f + index % 7 * 25.5f, 26f + index / 7 * 20f, radius, color)
                     }
                 }
-                pages(2)
                 "MTWTFSS".forEachIndexed { i, ch -> label(ch.toString(), 18f + i * 25.5f, 188f, 11f) }
 
             }
@@ -101,7 +80,7 @@ object WidgetArtwork {
                 label(targetName.take(24).ifBlank { "A little company." }, 18f, 47f, 12f)
                 if (comparison == null) {
                     label("Choose a friend or group", 18f, 96f, 10f)
-                    label("in Social, then refresh.", 18f, 112f, 10f, Design.Grey)
+                    label("in Together to compare.", 18f, 112f, 10f, Design.Grey)
                 } else {
                     val array = comparison.optJSONArray("members") ?: org.json.JSONArray()
                     val others = (0 until array.length()).map { array.getJSONObject(it) }
@@ -124,9 +103,8 @@ object WidgetArtwork {
                     val fetched = comparison.optLong("fetchedAt")
                     val stamp = java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.UK).format(java.util.Date(fetched))
                     label("Fetched " + stamp, 18f, 173f, 8f, Design.Grey)
-                    label(if (others.size > 2) "+${others.size - 2} more in Social" else "-- means unavailable", 18f, 187f, 8f, Design.Grey)
+                    label(if (others.size > 2) "+${others.size - 2} more in Together" else "-- means unavailable", 18f, 187f, 8f, Design.Grey)
                 }
-                pages(3)
             }
         }
         if (summary.steps == null && kind != WidgetKind.MONTH && kind != WidgetKind.COMPARISON) label("OPEN TO CONNECT", 46f, 193f, 7f, Design.Grey)

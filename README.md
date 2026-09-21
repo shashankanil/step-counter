@@ -1,6 +1,6 @@
 # Step Counter
 
-A local-first Android step dashboard with a single swipeable home-screen widget. Quiet charcoal surfaces, crisp totals, selective dots and sparse red accents. Original artwork; no proprietary fonts, screenshot crops or branded assets.
+A local-first Android step dashboard with resizable square and circular home-screen widgets. Quiet charcoal surfaces, crisp totals, selective dots and sparse red accents. Original artwork; no proprietary fonts, screenshot crops or branded assets.
 
 ## Build
 
@@ -14,7 +14,7 @@ Minimum API 26; Health Connect needs a supported Android 9+ device. The app read
 
 ## The widget
 
-Add **Step Counter** from the launcher or Widgets tab. There is one picker entry, with four vertically swipeable pages:
+Add **Step Counter** from the launcher or Home → Home screen widgets. Its up/down buttons flip between four pages, with only the active page visible:
 
 1. **Walk** — dotted walker on a progress path.
 2. **Stats** — today's steps and previous seven completed days' average.
@@ -23,9 +23,9 @@ Add **Step Counter** from the launcher or Widgets tab. There is one picker entry
 
 No profile/login letter chips appear in widget artwork. Tap a page to open the app. Start at 2 × 2 cells; square artwork fits resized bounds.
 
-`StackView` supplies actual vertical gestures. API 31+ uses `RemoteViews.RemoteCollectionItems`; older devices use `StepPageService` / `RemoteViewsFactory`. Both read the same `StepRepository` snapshot and refresh after foreground/WorkManager sync. Collection IDs remain stable across updates. [Android collection widget documentation](https://developer.android.com/develop/ui/views/appwidgets/collections).
+`AdapterViewFlipper` replaces the old stacked-card fan. Explicit up/down controls and page dots work without relying on launcher swipe support. Zero-duration transitions avoid overlapping pages; each widget saves its page across refreshes and process restarts. API 31+ uses `RemoteViews.RemoteCollectionItems`; older devices use `StepPageService` / `RemoteViewsFactory`. Both read the same `StepRepository` snapshot and refresh after foreground/WorkManager sync. Collection IDs remain stable across updates. [Android collection widget documentation](https://developer.android.com/develop/ui/views/appwidgets/collections).
 
-Existing installations with the old separate widget providers need to remove their old widgets and add the new Step Counter widget.
+**Step Counter Circle** is an independently pinnable second provider: a walker inside a progress ring, transparent corners and a circular picker preview. Both providers support horizontal and vertical resizing (2 × 2 through roughly 4 × 4, launcher permitting). Options changes redraw Canvas artwork at a size derived from the allocation, capped at 420 px per page to bound bitmap memory. Rectangular allocations preserve artwork proportions. The square tile reserves a separate control row so controls never cover calendar dots or totals. Both providers refresh through `updateWidgets`.
 
 ## Google identity
 
@@ -53,13 +53,15 @@ Sign-out clears local credentials and attempts Google state clearing and server 
 
 ## Friends, groups and comparisons
 
-The **Social** tab offers Friends, Groups and Compare:
+The three primary destinations are **Home**, **Together** and **You**. History and Home screen widgets are secondary destinations from Home; account, goal, Health Connect and privacy live in You.
+
+**Together** starts with Google sign-in or local-profile connection guidance when offline/unconfigured. Connected accounts see Add friend, Create or join group, then people and groups with pending/accepted status. Compare opens from a row or the pinned selection, rather than a peer sub-tab:
 
 - Invite an existing cloud account by Google email; only the recipient can accept.
 - Create a named group and share its selectable 12-character invite code; join by code.
 - Choose an accepted friend or joined group for Compare and the widget. Selection and caches are account-scoped.
 - Explicitly enable **Step sharing** to upload daily totals. Sign-in alone never uploads steps.
-- Disabling sharing immediately stops local uploads. Server confirmation deletes uploaded totals; if offline, deletion remains visibly pending and retries on Social refresh or the next successful health sync.
+- Disabling sharing immediately stops local uploads. Server confirmation deletes uploaded totals; if offline, deletion remains visibly pending and retries on Together refresh or the next successful health sync.
 - Failed social mutations are not silently queued. Inputs remain available to retry; the UI displays connection/empty states. Comparisons carry a fetched timestamp.
 
 Comparisons show today and the **seven days including today**. Missing totals and incomplete seven-day windows remain unavailable. This differs intentionally from the Stats page's seven **completed** days. Local dates are used; comparisons across time zones are by calendar date, not identical UTC intervals. The widget shows local self totals and up to two other members; full groups appear in the app.
@@ -103,8 +105,8 @@ All social routes require a valid session; Android sends `Authorization: Bearer 
 
 ## Data and app structure
 
-- `ui/`: Today, History, Widgets, Social, You and onboarding.
-- `widgets/`: single provider, backwards-compatible collection service and shared Canvas artwork.
+- `ui/`: Home, Together, You, secondary History/Home screen destinations and onboarding.
+- `widgets/`: square and circle providers, backwards-compatible collection service and shared Canvas artwork.
 - `data/auth/`: Credential Manager, encrypted identity/session storage.
 - `data/social/`: authenticated API access, scoped consent, target and comparison cache.
 - `data/health/`, `data/db/`, `data/StepRepository.kt`: Health Connect aggregate reads and local Room cache.
@@ -118,7 +120,7 @@ Android debug assembly, eight domain unit tests and lint are release checks. Ser
 
 No Android device is attached in this environment. Before release, exercise:
 
-- Launcher vertical flicks through all four pages, resize, TalkBack and process restart.
+- Launcher arrow flips through all four pages (including wraparound), independent widget selections, square/circle resize, TalkBack and process restart on pre-31 and API 31+ devices. Native launcher swipes are not promised; use the arrow controls.
 - Real Google account selection, backend-offline local identity, then online Better Auth exchange.
 - Two real accounts: request/accept, group join, consent, uploaded comparisons and offline opt-out retry.
 - Health Connect denial/revocation, background access, date rollover and time-zone changes.

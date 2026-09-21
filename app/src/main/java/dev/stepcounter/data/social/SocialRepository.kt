@@ -29,7 +29,7 @@ class SocialRepository(context: Context) {
         prefs.edit().putString(key("target"), value).putString(key("targetName"), name).remove(key("comparison")).apply()
     }
     suspend fun request(path: String, method: String = "GET", body: JSONObject? = null): JSONObject = withContext(Dispatchers.IO) {
-        check(auth.profile?.email.orEmpty() == account) { "Account changed. Reopen Social." }
+        check(auth.profile?.email.orEmpty() == account) { "Account changed. Reopen Together." }
         val token = auth.authorizationHeader() ?: error("Connect your Google account to the backend in You.")
         check(BuildConfig.API_CONFIGURED) { "Set API_BASE_URL to a reachable backend and rebuild." }
         val base = URI(BuildConfig.API_BASE_URL)

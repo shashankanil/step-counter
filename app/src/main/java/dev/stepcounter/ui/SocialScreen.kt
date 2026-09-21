@@ -29,6 +29,7 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
     var selected by mutableStateOf(repository.targetName); private set
     private fun launch(action: suspend () -> Unit) {
         if (busy) return
+        message = ""
         busy = true
         viewModelScope.launch {
             try { action() }
@@ -46,8 +47,7 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
         groups = repository.request("/groups").items("groups")
     }
     fun refresh() = launch {
-        // Clear any previous identity's UI before loading.
-        friends = emptyList(); groups = emptyList()
+        // The ViewModel is keyed by account; retain loaded rows during an offline retry.
         comparison = repository.cachedComparison; selected = repository.targetName
         repository.sync(StepRepository(getApplication()).snapshot())
         load()
@@ -75,32 +75,61 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
     }
 }
 
-@Composable fun SocialScreen(model: SocialViewModel = viewModel()) {
-    var page by rememberSaveable { mutableStateOf("Friends") }
+@Composable fun SocialScreen(state: StepUiState, appModel: StepViewModel, model: SocialViewModel = viewModel()) {
+    var page by rememberSaveable { mutableStateOf("Overview") }
     var handle by rememberSaveable { mutableStateOf("") }
     var name by rememberSaveable { mutableStateOf("") }
     var code by rememberSaveable { mutableStateOf("") }
-    LaunchedEffect(Unit) { model.refresh() }
-    Page {
-        Heading("Together, at your pace", "A little company.")
-        Tile {
-            Eyebrow("Step sharing")
-            Text("Opt in to upload daily totals. Accepted friends and members of your groups can see today and the last seven days. Turning off deletes uploaded totals.")
-            Row {
-                Switch(model.enabled, { model.sharing(it) }, enabled = !model.busy)
-                Text(if (model.enabled) "Sharing enabled" else "Steps stay on this device")
-            }
-            if (model.pendingDisable) {
-                Text("Uploads stopped on this device. Cloud deletion is pending; reconnect and retry.")
-                Action("Retry turning off", !model.busy) { model.sharing(false) }
+    androidx.activity.compose.BackHandler(enabled = page != "Overview") { page = "Overview" }
+    val connected = state.account?.connected == true
+    LaunchedEffect(connected) { if (connected) model.refresh() }
+    if (!connected) {
+        Page {
+            Heading("Together", "A little company.")
+            Text("Walk at your own pace, with people you know.")
+            AccountTile(state, appModel)
+            Tile {
+                Eyebrow("Always opt-in")
+                Text("Signing in does not share your steps. When connected, choose who to walk with and whether to share daily totals.")
+                if (state.account != null) Text("Friends and groups need a cloud connection. Your local steps are still available in Home.")
             }
         }
-        Row { listOf("Friends", "Groups", "Compare").forEach { tab ->
-            TextButton({ page = tab }) { Text(if (page == tab) "• $tab" else tab) }
-        } }
+        return
+    }
+    Page {
+        Heading("Together", if (page == "Compare") model.selected else "A little company.")
+        if (page != "Overview") TextButton({ page = "Overview" }) { Text("← People & groups") }
+        if (page == "Overview") {
+            Column {
+                Action("Add friend", !model.busy) { page = "Friends" }
+                TextButton({ page = "Groups" }) { Text("Create or join group") }
+            }
+            if (model.selected.isNotBlank()) TextButton({ page = "Compare" }) { Text("Pinned compare · ${model.selected} →") }
+        }
         if (model.message.isNotBlank()) Text(model.message)
         if (model.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         when (page) {
+            "Overview" -> {
+                Eyebrow("People")
+                if (model.friends.isEmpty()) Text("No people loaded. Add a friend by their Google account email.")
+                model.friends.forEach { friend -> Tile {
+                    Text(friend.getString("name"), fontSize = 22.sp)
+                    val accepted = friend.getString("status") == "accepted"
+                    Text(if (accepted) "Accepted friend" else if (friend.getBoolean("outgoing")) "Pending · request sent" else "Pending · wants to walk with you")
+                    if (!accepted && !friend.getBoolean("outgoing")) Action("Accept", !model.busy) {
+                        model.mutate("/friends/${friend.getString("id")}/accept", JSONObject())
+                    }
+                    if (accepted) TextButton({ model.select("friend=${friend.getString("userId")}", friend.getString("name")); page = "Compare" }, enabled = !model.busy) { Text("Compare →") }
+                } }
+                Eyebrow("Groups")
+                if (model.groups.isEmpty()) Text("No groups loaded. Start one or join with an invite code.")
+                model.groups.forEach { group -> Tile {
+                    Text(group.getString("name"), fontSize = 22.sp)
+                    Text("Joined")
+                    androidx.compose.foundation.text.selection.SelectionContainer { Text("Invite code: ${group.getString("code")}") }
+                    TextButton({ model.select("group=${group.getString("id")}", group.getString("name")); page = "Compare" }, enabled = !model.busy) { Text("Compare →") }
+                } }
+            }
             "Friends" -> {
                 Tile {
                     Eyebrow("Invite a friend")
@@ -109,18 +138,7 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
                         model.mutate("/friends", JSONObject().put("handle", handle))
                     }
                 }
-                if (model.friends.isEmpty()) Text("No friends to show. Connect to the cloud and invite someone.")
-                model.friends.forEach { friend -> Tile {
-                    Text(friend.getString("name"), fontSize = 22.sp)
-                    Text(friend.getString("email"))
-                    val accepted = friend.getString("status") == "accepted"
-                    Text(if (accepted) "Friends" else if (friend.getBoolean("outgoing")) "Request sent" else "Wants to walk with you")
-                    if (!accepted && !friend.getBoolean("outgoing"))
-                        Action("Accept", !model.busy) { model.mutate("/friends/${friend.getString("id")}/accept", JSONObject()) }
-                    if (accepted) Action("Compare", !model.busy) {
-                        model.select("friend=${friend.getString("userId")}", friend.getString("name")); page = "Compare"
-                    }
-                } }
+                TextButton({ page = "Overview" }) { Text("View people & requests →") }
             }
             "Groups" -> {
                 Tile {
@@ -133,18 +151,11 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
                     OutlinedTextField(code, { code = it }, label = { Text("Group code") }, modifier = Modifier.fillMaxWidth())
                     Action("Join", !model.busy && code.isNotBlank()) { model.mutate("/groups/join", JSONObject().put("code", code)) }
                 }
-                if (model.groups.isEmpty()) Text("No groups to show. Create one or ask someone for their invite code.")
-                model.groups.forEach { group -> Tile {
-                    Text(group.getString("name"), fontSize = 22.sp)
-                    androidx.compose.foundation.text.selection.SelectionContainer { Text("Invite code: ${group.getString("code")}") }
-                    Action("Compare group", !model.busy) {
-                        model.select("group=${group.getString("id")}", group.getString("name")); page = "Compare"
-                    }
-                } }
+                TextButton({ page = "Overview" }) { Text("View your groups →") }
             }
             else -> {
                 Text(model.selected.ifBlank { "Choose a friend or group to compare." }, fontSize = 22.sp)
-                Text("Your selection also appears on the widget. Seven days includes today; incomplete totals show as unavailable.")
+                Text("Pinned to your widget. Seven days includes today. Missing totals are shown as unavailable.")
                 val result = model.comparison
                 if (result == null) Text("No comparison available. Select a target and refresh when connected.")
                 else {
@@ -161,6 +172,18 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
                         }
                     }
                 }
+            }
+        }
+        Tile {
+            Eyebrow("Step sharing")
+            Text("Opt in to upload daily totals. Accepted friends and members of your groups can see today and the last seven days. Turning off deletes uploaded totals.")
+            Row {
+                Switch(model.enabled, { model.sharing(it) }, enabled = !model.busy)
+                Text(if (model.enabled) "Sharing enabled" else "Steps stay on this device")
+            }
+            if (model.pendingDisable) {
+                Text("Uploads stopped on this device. Cloud deletion is pending; reconnect and retry.")
+                Action("Retry turning off", !model.busy) { model.sharing(false) }
             }
         }
         Action("Refresh", !model.busy) { model.refresh() }

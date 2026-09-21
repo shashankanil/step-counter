@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter
 import java.text.DateFormat
 import java.util.Date
 
-@Composable fun TodayScreen(state: StepUiState, refresh: () -> Unit, goal: () -> Unit, profile: () -> Unit) {
+@Composable fun TodayScreen(state: StepUiState, refresh: () -> Unit, goal: () -> Unit, profile: () -> Unit, history: () -> Unit, widgets: () -> Unit) {
     val s = state.summary
     Page {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -45,6 +45,11 @@ import java.util.Date
                     fontSize = 11.sp, color = Color(Design.Grey))
             }
             TextButton(refresh, enabled = !state.busy) { Text("Refresh") }
+        }
+        Tile {
+            Eyebrow("Your rhythm")
+            TextButton(history) { Text("History →") }
+            TextButton(widgets) { Text("Home screen widgets →") }
         }
         if (s.steps == null) Text("Your next chapter starts with a step. Connect Health Connect in You to see your movement here.", color = Color(Design.Grey))
     }

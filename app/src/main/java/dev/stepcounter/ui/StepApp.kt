@@ -42,7 +42,8 @@ import dev.stepcounter.widgets.WidgetKind
 @Composable fun StepApp(state: StepUiState, model: StepViewModel, connect: (Boolean) -> Unit, pin: (WidgetKind) -> Unit) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
-    val route = entry?.destination?.route ?: "Today"
+    val route = entry?.destination?.route ?: "Home"
+    val primary = if (route in listOf("History", "Widgets")) "Home" else route
     var goalOpen by rememberSaveable { mutableStateOf(false) }
     val snack = remember { SnackbarHostState() }
     LaunchedEffect(state.message) {
@@ -55,13 +56,13 @@ import dev.stepcounter.widgets.WidgetKind
                     Row(Modifier.navigationBarsPadding().padding(horizontal = 18.dp, vertical = 10.dp)
                         .fillMaxWidth().background(Color(Design.Surface), CircleShape).padding(5.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly) {
-                        listOf("Today", "History", "Widgets", "Social", "You").forEach { tab ->
+                        listOf("Home", "Together", "You").forEach { tab ->
                             TextButton(onClick = {
                                 nav.navigate(tab) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true }
-                            }, modifier = Modifier.weight(1f).semantics { selected = route == tab },
-                                colors = ButtonDefaults.textButtonColors(contentColor = if (route == tab) Color.White else Color(Design.Grey))) {
+                            }, modifier = Modifier.weight(1f).semantics { selected = primary == tab },
+                                colors = ButtonDefaults.textButtonColors(contentColor = if (primary == tab) Color.White else Color(Design.Grey))) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Box(Modifier.size(4.dp).background(if (route == tab) Color(Design.Red) else Color.Transparent, CircleShape))
+                                    Box(Modifier.size(4.dp).background(if (primary == tab) Color(Design.Red) else Color.Transparent, CircleShape))
                                     Spacer(Modifier.height(6.dp))
                                     Text(tab, fontSize = 12.sp, maxLines = 1)
                                 }
@@ -74,11 +75,11 @@ import dev.stepcounter.widgets.WidgetKind
                 when {
                     state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Eyebrow("Step / Counter") }
                     !state.onboarded -> Onboarding(state, model, connect, pin, { goalOpen = true })
-                    else -> NavHost(nav, startDestination = "Today", enterTransition = { fadeIn(tween(250)) }, exitTransition = { fadeOut(tween(150)) }) {
-                        composable("Today") { TodayScreen(state, { model.refresh() }, { goalOpen = true }, { nav.navigate("You") }) }
-                        composable("History") { HistoryScreen(state.summary) }
-                        composable("Widgets") { WidgetsScreen(state.summary, pin) }
-                        composable("Social") { SocialScreen(androidx.lifecycle.viewmodel.compose.viewModel(key = state.account?.email ?: "local")) }
+                    else -> NavHost(nav, startDestination = "Home", enterTransition = { fadeIn(tween(250)) }, exitTransition = { fadeOut(tween(150)) }) {
+                        composable("Home") { TodayScreen(state, { model.refresh() }, { goalOpen = true }, { nav.navigate("You") }, { nav.navigate("History") }, { nav.navigate("Widgets") }) }
+                        composable("History") { Column { TextButton({ nav.popBackStack() }) { Text("← Home") }; Box(Modifier.weight(1f)) { HistoryScreen(state.summary) } } }
+                        composable("Widgets") { Column { TextButton({ nav.popBackStack() }) { Text("← Home") }; Box(Modifier.weight(1f)) { WidgetsScreen(state.summary, pin) } } }
+                        composable("Together") { SocialScreen(state, model, androidx.lifecycle.viewmodel.compose.viewModel(key = state.account?.email ?: "local")) }
                         composable("You") { YouScreen(state, model, connect, { goalOpen = true }, { nav.navigate("Privacy") }) }
                         composable("Privacy") { PrivacyContent { nav.popBackStack() } }
                     }
