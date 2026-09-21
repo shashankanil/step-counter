@@ -1,0 +1,10 @@
+# Set Railway's service root directory to /server. Do not deploy until approved.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+[deploy]
+preDeployCommand = "node dist/migrate.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

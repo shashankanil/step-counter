@@ -12,6 +12,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class StepRepository(context: Context) {
+    private val auth = dev.stepcounter.data.auth.AuthRepository(context)
     private val db = StepDatabase.get(context)
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     val health = HealthSource(context)
@@ -29,7 +30,7 @@ class StepRepository(context: Context) {
         val zone = ZoneId.systemDefault().id
         val rows = if (prefs.getString("zone", zone) == zone) db.steps().all() else emptyList()
         return StepSummary(days = rows.associate { LocalDate.parse(it.date) to it.steps },
-            initial = initial, goal = prefs.getInt("goal", 10_000), updatedAt = rows.maxOfOrNull { it.syncedAt } ?: 0,
+            initial = auth.profile?.initial ?: initial, goal = prefs.getInt("goal", 10_000), updatedAt = rows.maxOfOrNull { it.syncedAt } ?: 0,
             status = prefs.getString("status", "Connect Health Connect")!!)
     }
     suspend fun sync(background: Boolean): Boolean = lock.withLock {

@@ -15,12 +15,14 @@ import kotlinx.coroutines.launch
 data class StepUiState(
     val summary: StepSummary = StepSummary(), val loading: Boolean = true,
     val busy: Boolean = false, val permissions: Set<String> = emptySet(),
+    val account: dev.stepcounter.data.auth.AuthProfile? = null, val authBusy: Boolean = false,
     val onboarded: Boolean = false, val message: String = "",
 )
 
 class StepViewModel(application: Application) : AndroidViewModel(application) {
+    val auth = dev.stepcounter.data.auth.AuthRepository(application)
     val repository = StepRepository(application)
-    private val mutable = MutableStateFlow(StepUiState())
+    private val mutable = MutableStateFlow(StepUiState(account = auth.profile))
     val state = mutable.asStateFlow()
     fun refresh() {
         if (mutable.value.busy) return
@@ -44,6 +46,40 @@ class StepViewModel(application: Application) : AndroidViewModel(application) {
             } catch (_: Exception) {
                 mutable.update { it.copy(message = "Could not sync. Check Health Connect and try again.", loading = false) }
             } finally { mutable.update { it.copy(busy = false) } }
+        }
+    }
+    fun signIn(context: android.content.Context) = accountAction {
+        auth.signIn(context)
+        if (dev.stepcounter.BuildConfig.API_CONFIGURED) "Signed in. Your steps still stay local." else "Google profile saved. Social connection is not enabled yet."
+    }
+    fun signOut() = accountAction {
+        if (auth.signOut()) "Signed out. Your local steps are unchanged."
+        else "Signed out on this device. Remote session or Google sign-out could not be confirmed."
+    }
+    private fun accountAction(action: suspend () -> String) {
+        if (mutable.value.authBusy) return
+        mutable.update { it.copy(authBusy = true) }
+        viewModelScope.launch {
+            try {
+                val message = action()
+                mutable.update { it.copy(message = message) }
+            } catch (e: CancellationException) { throw e
+            } catch (_: androidx.credentials.exceptions.GetCredentialCancellationException) {
+                mutable.update { it.copy(message = "Sign-in cancelled. You can keep using local steps.") }
+            } catch (_: androidx.credentials.exceptions.NoCredentialException) {
+                mutable.update { it.copy(message = "No Google account is available. Add one on this device and try again.") }
+            } catch (_: Exception) {
+                mutable.update { it.copy(message = if (dev.stepcounter.BuildConfig.GOOGLE_WEB_CLIENT_ID.isBlank())
+                    "Google sign-in is not configured in this build." else "Could not sign in. Check your connection and try again.") }
+            } finally {
+                mutable.update { it.copy(account = auth.profile, authBusy = false) }
+                try {
+                    val snapshot = repository.snapshot()
+                    mutable.update { it.copy(summary = snapshot) }
+                    updateWidgets(getApplication())
+                } catch (e: CancellationException) { throw e
+                } catch (_: Exception) { mutable.update { it.copy(message = "Account updated. Open the app again to refresh widgets.") } }
+            }
         }
     }
     fun goal(value: Int) = edit { repository.setGoal(value) }

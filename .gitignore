@@ -7,3 +7,12 @@ local.properties
 *.jks
 *.keystore
 .DS_Store
+
+.env
+.env.*
+local.properties
+
+!server/.env.example
+**/node_modules/
+server/dist/
+.debug-sha1.txt

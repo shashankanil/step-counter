@@ -61,13 +61,14 @@ import dev.stepcounter.widgets.WidgetKind
     val health = model.repository.health
     Page {
         Heading("Locally yours", "You set the pace.")
+        AccountTile(state, model)
         Tile {
             Eyebrow("Your signature")
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(state.summary.initial, fontSize = 48.sp)
-                TextButton({ editing = true }) { Text("Edit initial ↗") }
+                TextButton({ editing = true }, enabled = state.account?.initial == null) { Text("Edit initial ↗") }
             }
-            Text("A single letter, shared with your widgets. Stored only on this device.", color = Color(Design.Grey), fontSize = 13.sp)
+            Text("Your Google given-name initial appears on widgets when available. Otherwise, use your local letter.", color = Color(Design.Grey), fontSize = 13.sp)
         }
         Tile { Eyebrow("Daily intention"); Matrix(state.summary.goal.toLong()); Action("Adjust goal", onClick = goal) }
         Tile {
@@ -86,9 +87,9 @@ import dev.stepcounter.widgets.WidgetKind
                 Text(if (health.backgroundPermission in state.permissions) "Manage in Health Connect ↗" else "Allow background access ↗")
             }
         }
-        Tile { Eyebrow("Private by design"); Text("No account. No uploads.\nJust your steps.", fontSize = 23.sp); TextButton(privacy) { Text("Privacy & permissions ↗") } }
+        Tile { Eyebrow("Private by design"); Text("Optional account.\nSteps stay local.", fontSize = 23.sp); TextButton(privacy) { Text("Privacy & permissions ↗") } }
         Eyebrow("Step / Counter   ·   0.2.0")
-        Text("Original dot artwork. Built for a quieter relationship with movement. No ads, analytics, backend or social features.", color = Color(Design.Grey), fontSize = 12.sp)
+        Text("Original dot artwork. Built for a quieter relationship with movement. No ads or analytics. Social features are coming later.", color = Color(Design.Grey), fontSize = 12.sp)
     }
     if (editing) AlertDialog(onDismissRequest = { editing = false }, title = { Text("Make your mark.") },
         text = { OutlinedTextField(initial, { initial = it.filter { c -> c in 'a'..'z' || c in 'A'..'Z' }.take(1).uppercase() },
@@ -104,6 +105,7 @@ import dev.stepcounter.widgets.WidgetKind
         Heading("A little movement, every day", when(page) { 0 -> "Your day,\nin dots."; 1 -> "Find a goal\nthat feels like you."; else -> "Keep your next\nstep in sight." })
         when(page) {
             0 -> {
+                AccountTile(state, model)
                 GoalOrbit(state.summary, Modifier.fillMaxWidth())
                 Text("Connect Health Connect to see your steps. Your totals stay on this device. You control access.", color = Color(Design.Grey))
                 Action(if (model.repository.health.readPermission in state.permissions) "Connected" else "Connect Health Connect", !state.busy) { connect(false) }
@@ -123,9 +125,34 @@ import dev.stepcounter.widgets.WidgetKind
     Page {
         Heading("Privacy & permissions", "Your steps\nstay here.")
         Tile { Eyebrow("Read only"); Text("Step Counter reads step totals from Health Connect to show today's progress, a seven-day average and a monthly calendar. Optional background access refreshes your widgets when the app is closed.") }
-        Tile { Eyebrow("On this device"); Text("Daily totals are stored in a local Room database. No account, advertising, analytics, backend or upload is included. Android backup is disabled. No data is written to Health Connect.") }
+        Tile { Eyebrow("On this device"); Text("Daily totals stay in a local Room database until you explicitly opt into sync. Sync is not available yet. An account is optional for future social features. Google sign-in shares your identity with Google and, when connected, our account service; it never uploads steps. Your profile and tokens are encrypted on this device. No advertising or analytics. Android backup is disabled. No data is written to Health Connect.") }
         Tile { Eyebrow("Always in your control"); Text("Revoke permissions in Health Connect at any time. Detected step-permission revocation clears the local cache on the next sync. Clear this app's storage or uninstall to remove all local settings and totals immediately.") }
         Tile { Eyebrow("Reading the dots"); Text("The seven-day average uses the previous seven completed days. Grey calendar dots show recorded activity, white dots mean the current goal was reached, and red marks today. Tiny dots indicate zero, unavailable or future data.") }
         Action("Done", onClick = done)
+    }
+}
+
+@Composable private fun AccountTile(state: StepUiState, model: StepViewModel) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    Tile {
+        Eyebrow("Your optional account")
+        val account = state.account
+        if (account == null) {
+            Text("A little more connected.", fontSize = 23.sp)
+            Text("Sign in for future social features. Your steps stay local until you opt into sync. You can always continue without an account.", color = Color(Design.Grey), fontSize = 13.sp)
+            OutlinedButton({ model.signIn(context) }, enabled = !state.authBusy,
+                shape = androidx.compose.foundation.shape.CircleShape,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
+                Text(if (state.authBusy) "Connecting…" else "Sign in with Google")
+            }
+        } else {
+            Text(account.name, fontSize = 23.sp)
+            Text(account.email, color = Color(Design.Grey))
+            Text(if (account.connected) "Account connected · step sync is off" else "Google profile on this device · social connection coming soon", color = Color(Design.Grey), fontSize = 13.sp)
+            if (!account.connected && dev.stepcounter.BuildConfig.API_CONFIGURED)
+                Action("Connect account", !state.authBusy) { model.signIn(context) }
+            TextButton({ model.signOut() }, enabled = !state.authBusy) { Text(if (state.authBusy) "Please wait…" else "Sign out") }
+        }
     }
 }
