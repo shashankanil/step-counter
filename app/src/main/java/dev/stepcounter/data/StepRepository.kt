@@ -1,0 +1,56 @@
+package dev.stepcounter.data
+
+import android.content.Context
+import androidx.health.connect.client.HealthConnectClient
+import androidx.room.withTransaction
+import dev.stepcounter.data.db.*
+import dev.stepcounter.data.health.HealthSource
+import dev.stepcounter.domain.StepSummary
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.time.LocalDate
+import java.time.ZoneId
+
+class StepRepository(context: Context) {
+    private val db = StepDatabase.get(context)
+    private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+    val health = HealthSource(context)
+    fun setGoal(value: Int) { require(value in 100..100_000); prefs.edit().putInt("goal", value).apply() }
+    suspend fun snapshot(): StepSummary {
+        val zone = ZoneId.systemDefault().id
+        val rows = if (prefs.getString("zone", zone) == zone) db.steps().all() else emptyList()
+        return StepSummary(days = rows.associate { LocalDate.parse(it.date) to it.steps },
+            goal = prefs.getInt("goal", 10_000), updatedAt = rows.maxOfOrNull { it.syncedAt } ?: 0,
+            status = prefs.getString("status", "Connect Health Connect")!!)
+    }
+    suspend fun sync(background: Boolean): Boolean = lock.withLock {
+        if (health.availability != HealthConnectClient.SDK_AVAILABLE) {
+            status("Health Connect unavailable"); return@withLock false
+        }
+        val permissions = health.permissions()
+        if (health.readPermission !in permissions) {
+            db.steps().clear(); status("Allow step access"); return@withLock false
+        }
+        if (background && (!health.backgroundSupported() || health.backgroundPermission !in permissions)) {
+            status("Open app to refresh"); return@withLock false
+        }
+        val today = LocalDate.now()
+        val zone = ZoneId.systemDefault()
+        val now = System.currentTimeMillis()
+        // A rolling 30-day window stays inside Health Connect's default history allowance.
+        val rows = (0L..29L).map { ago ->
+            val date = today.minusDays(ago)
+            DailySteps(date.toString(), health.steps(date, zone), now)
+        }
+        db.withTransaction {
+            if (prefs.getString("zone", zone.id) != zone.id) db.steps().clear()
+            db.steps().upsert(rows)
+            db.steps().prune(today.minusDays(62).toString())
+        }
+        prefs.edit().putString("zone", zone.id).apply()
+        status(if (health.backgroundPermission in permissions) "Synced · Health Connect" else "Synced · refresh in app")
+        true
+    }
+    fun status(value: String) { prefs.edit().putString("status", value).apply() }
+    companion object { private val lock = Mutex() }
+}

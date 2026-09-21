@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Step Counter</string>
+    <string name="walk_widget">Walk progress</string>
+    <string name="stats_widget">Stats stack</string>
+    <string name="month_widget">Month grid</string>
+    <string name="circular_widget">Circular metric</string>
+    <string name="widget_description">Your steps, quietly at a glance. Tap to open Step Counter.</string>
+</resources>
