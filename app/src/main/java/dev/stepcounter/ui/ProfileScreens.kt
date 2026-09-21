@@ -149,7 +149,7 @@ import dev.stepcounter.widgets.WidgetKind
         } else {
             Text(account.name, fontSize = 23.sp)
             Text(account.email, color = Color(Design.Grey))
-            Text(if (account.connected) "Account connected · step sync is off" else "Google profile on this device · social connection coming soon", color = Color(Design.Grey), fontSize = 13.sp)
+            Text(if (account.connected) "Account connected · manage step sharing in Social" else "Google profile saved locally · cloud sync needs a reachable backend", color = Color(Design.Grey), fontSize = 13.sp)
             if (!account.connected && dev.stepcounter.BuildConfig.API_CONFIGURED)
                 Action("Connect account", !state.authBusy) { model.signIn(context) }
             TextButton({ model.signOut() }, enabled = !state.authBusy) { Text(if (state.authBusy) "Please wait…" else "Sign out") }

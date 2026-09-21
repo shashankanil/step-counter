@@ -62,11 +62,19 @@ class AuthRepository(context: Context) {
         val custom = result.credential as? CustomCredential ?: error("Unexpected credential")
         check(custom.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL)
         val google = GoogleIdTokenCredential.createFrom(custom.data)
-        val session = if (BuildConfig.API_CONFIGURED) exchange(google.idToken) else null
+        // A Google credential is useful locally even when the optional backend is offline.
+        val claims = JSONObject(String(Base64.decode(google.idToken.split('.')[1], Base64.URL_SAFE or Base64.NO_WRAP), Charsets.UTF_8))
+        val identity = JSONObject().put("name", claims.optString("name", google.displayName ?: google.id))
+            .put("email", claims.optString("email", google.id))
+            .put("givenName", claims.optString("given_name", google.givenName.orEmpty()))
+            .put("photo", claims.optString("picture", google.profilePictureUri?.toString().orEmpty()))
+            .put("idToken", google.idToken).put("sessionToken", "")
+        withContext(Dispatchers.IO) { save(identity) }
+        val session = try { if (BuildConfig.API_CONFIGURED) exchange(google.idToken) else null }
+        catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (_: Exception) { null }
         withContext(Dispatchers.IO) {
-            save(JSONObject().put("name", google.displayName ?: google.id).put("email", google.id)
-                .put("givenName", google.givenName.orEmpty()).put("photo", google.profilePictureUri?.toString().orEmpty())
-                .put("idToken", google.idToken).put("sessionToken", session.orEmpty()))
+            save(identity.put("sessionToken", session.orEmpty()))
         }
     }
     private suspend fun exchange(token: String): String = withContext(Dispatchers.IO) {

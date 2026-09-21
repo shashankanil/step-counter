@@ -50,7 +50,7 @@ class StepViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun signIn(context: android.content.Context) = accountAction {
         auth.signIn(context)
-        if (dev.stepcounter.BuildConfig.API_CONFIGURED) "Signed in. Your steps still stay local." else "Google profile saved. Social connection is not enabled yet."
+        if (auth.profile?.connected == true) "Signed in. Your steps still stay local." else "Google profile saved on this device. Cloud sync needs a reachable backend; check API_BASE_URL and retry Connect account."
     }
     fun signOut() = accountAction {
         if (auth.signOut()) "Signed out. Your local steps are unchanged."
