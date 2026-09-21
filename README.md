@@ -14,7 +14,7 @@ Minimum API 26; Health Connect needs a supported Android 9+ device. The app read
 
 ## The widget
 
-Add **Step Counter** from the launcher or Home → Home screen widgets. Its up/down buttons flip between four pages, with only the active page visible:
+Add **Step Counter** from the launcher or Home → Home screen widgets. Scroll or flick vertically on the tile to move between four full-size pages:
 
 1. **Walk** — dotted walker on a progress path.
 2. **Stats** — today's steps and previous seven completed days' average.
@@ -23,9 +23,9 @@ Add **Step Counter** from the launcher or Home → Home screen widgets. Its up/d
 
 No profile/login letter chips appear in widget artwork. Tap a page to open the app. Start at 2 × 2 cells; square artwork fits resized bounds.
 
-`AdapterViewFlipper` replaces the old stacked-card fan. Explicit up/down controls and page dots work without relying on launcher swipe support. Zero-duration transitions avoid overlapping pages; each widget saves its page across refreshes and process restarts. API 31+ uses `RemoteViews.RemoteCollectionItems`; older devices use `StepPageService` / `RemoteViewsFactory`. Both read the same `StepRepository` snapshot and refresh after foreground/WorkManager sync. Collection IDs remain stable across updates. [Android collection widget documentation](https://developer.android.com/develop/ui/views/appwidgets/collections).
+A full-bleed `ListView` displays the pages without buttons, dots or other pagination controls. Each square row sizes to its artwork so one page fills a square tile. Scroll position is left to the launcher across refreshes; updates do not force the list back to the first page. Some launchers may treat vertical drags as home-screen scroll — try a decisive flick on the tile; Pixel and Samsung launchers are usually OK. API 31+ uses `RemoteViews.RemoteCollectionItems`; older devices use `StepPageService` / `RemoteViewsFactory`. Both read the same `StepRepository` snapshot and refresh after foreground/WorkManager sync. Collection IDs remain stable across updates. [Android collection widget documentation](https://developer.android.com/develop/ui/views/appwidgets/collections).
 
-**Step Counter Circle** is an independently pinnable second provider: a walker inside a progress ring, transparent corners and a circular picker preview. Both providers support horizontal and vertical resizing (2 × 2 through roughly 4 × 4, launcher permitting). Options changes redraw Canvas artwork at a size derived from the allocation, capped at 420 px per page to bound bitmap memory. Rectangular allocations preserve artwork proportions. The square tile reserves a separate control row so controls never cover calendar dots or totals. Both providers refresh through `updateWidgets`.
+**Step Counter Circle** is an independently pinnable second provider: a walker inside a progress ring, transparent corners and a circular picker preview. Both providers support horizontal and vertical resizing (2 × 2 through roughly 4 × 4, launcher permitting). Options changes redraw Canvas artwork at a size derived from the allocation, capped at 420 px per page to bound bitmap memory. Rectangular allocations preserve artwork proportions. The square tile uses its entire surface for the scrolling artwork. Both providers refresh through `updateWidgets`.
 
 ## Google identity
 
@@ -120,7 +120,7 @@ Android debug assembly, eight domain unit tests and lint are release checks. Ser
 
 No Android device is attached in this environment. Before release, exercise:
 
-- Launcher arrow flips through all four pages (including wraparound), independent widget selections, square/circle resize, TalkBack and process restart on pre-31 and API 31+ devices. Native launcher swipes are not promised; use the arrow controls.
+- Launcher vertical scroll/flick through all four pages, tap to open, scroll retention across data refreshes, square/circle resize, TalkBack and process restart on pre-31 and API 31+ devices. Check decisive flicks on launchers that intercept vertical drags.
 - Real Google account selection, backend-offline local identity, then online Better Auth exchange.
 - Two real accounts: request/accept, group join, consent, uploaded comparisons and offline opt-out retry.
 - Health Connect denial/revocation, background access, date rollover and time-zone changes.

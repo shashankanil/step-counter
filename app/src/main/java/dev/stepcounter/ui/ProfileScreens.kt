@@ -10,15 +10,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import dev.stepcounter.domain.StepSummary
 import dev.stepcounter.widgets.WidgetKind
 
 @Composable fun WidgetsScreen(summary: StepSummary, pin: (WidgetKind) -> Unit) {
     Page {
         Heading("Home screen", "Movement, at a glance.")
-        Text("Four quiet pages: Walk, Stats, Month and Compare. Use the up/down arrows on your home screen tile. Tap the artwork to open the app.", color = Color(Design.Grey))
+        Text("Four quiet pages: Walk, Stats, Month and Compare. Swipe up or down on your home screen tile. Tap the artwork to open the app.", color = Color(Design.Grey))
         val pager = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 4 })
         androidx.compose.foundation.pager.VerticalPager(state = pager, modifier = Modifier.fillMaxWidth().height(300.dp)) { index ->
             WidgetPreview(WidgetKind.entries[index], summary, Modifier.fillMaxHeight())
@@ -57,15 +55,22 @@ import dev.stepcounter.widgets.WidgetKind
 @Composable fun YouScreen(state: StepUiState, model: StepViewModel, connect: (Boolean) -> Unit, goal: () -> Unit, privacy: () -> Unit) {
     val health = model.repository.health
     Page {
-        Heading("Locally yours", "You set the pace.")
+        Heading("You", "You set the pace.")
+        Eyebrow("Connection")
         AccountTile(state, model)
-        Tile { Eyebrow("Daily intention"); Matrix(state.summary.goal.toLong()); Action("Adjust goal", onClick = goal) }
+        Tile {
+            Eyebrow("Daily intention")
+            Matrix(state.summary.goal.toLong())
+            Text("Steps a day. Choose a goal that fits your routine.", color = Color(Design.Grey))
+            Action("Adjust goal", onClick = goal)
+        }
+        Eyebrow("Your step data")
         Tile {
             Eyebrow("Health Connect")
             Text(if (health.readPermission in state.permissions) "Connected to your movement." else "Bring your steps together.", fontSize = 22.sp)
             Text("Read-only step totals from your connected sources. This app does not count steps on its own.", color = Color(Design.Grey), fontSize = 13.sp)
             Action(if (health.readPermission in state.permissions) "Review access ↗" else "Connect / install ↗", !state.busy) { connect(false) }
-            HorizontalDivider(color = Color(0xFF383838))
+            HorizontalDivider(color = Color(Design.Grey).copy(alpha = .25f))
             Eyebrow("Background refresh")
             Text(when {
                 health.backgroundPermission in state.permissions -> "Allowed · Android schedules updates roughly every 30 minutes, sometimes later."
@@ -76,7 +81,12 @@ import dev.stepcounter.widgets.WidgetKind
                 Text(if (health.backgroundPermission in state.permissions) "Manage in Health Connect ↗" else "Allow background access ↗")
             }
         }
-        Tile { Eyebrow("Private by design"); Text("Optional account.\nSharing is your choice.", fontSize = 23.sp); TextButton(privacy) { Text("Privacy & permissions ↗") } }
+        Tile {
+            Eyebrow("Privacy")
+            Text("Sharing is your choice.", fontSize = 23.sp)
+            Text("Review what stays on your device and the access you control.", color = Color(Design.Grey))
+            OutlinedButton(privacy) { Text("Privacy & permissions") }
+        }
         Eyebrow("Step / Counter   ·   0.2.0")
         Text("Original dot artwork. Built for a quieter relationship with movement. No ads or analytics. Walk together in Together when you choose to share.", color = Color(Design.Grey), fontSize = 12.sp)
     }
@@ -90,13 +100,16 @@ import dev.stepcounter.widgets.WidgetKind
         Heading("A little movement, every day", when(page) { 0 -> "Your day,\nin dots."; 1 -> "Find a goal\nthat feels like you."; else -> "Keep your next\nstep in sight." })
         when(page) {
             0 -> {
-                AccountTile(state, model)
                 GoalOrbit(state.summary, Modifier.fillMaxWidth())
                 Text("Connect Health Connect to see your steps. Your totals stay on this device. You control access.", color = Color(Design.Grey))
-                Action(if (model.repository.health.readPermission in state.permissions) "Connected" else "Connect Health Connect", !state.busy) { connect(false) }
+                Tile {
+                    Eyebrow("Step data")
+                    Action(if (model.repository.health.readPermission in state.permissions) "Review Health Connect access" else "Connect Health Connect", !state.busy) { connect(false) }
+                    Text("No account needed. You can connect with friends later in Together.", color = Color(Design.Grey))
+                }
             }
             1 -> { Tile { Eyebrow("Daily goal"); Matrix(state.summary.goal.toLong()); Action("Set your goal", onClick = goal) }; Text("Start with something achievable. Change it any time in You.", color = Color(Design.Grey)) }
-            else -> { WidgetPreview(WidgetKind.STATS, state.summary, Modifier.fillMaxWidth(.8f)); Action("Add Step Counter widget") { pin(WidgetKind.STATS) }; Text("Your launcher will ask you to confirm. Use the arrows to flip through all four pages of the same widget.", color = Color(Design.Grey)) }
+            else -> { WidgetPreview(WidgetKind.STATS, state.summary, Modifier.fillMaxWidth(.8f)); Action("Add Step Counter widget") { pin(WidgetKind.STATS) }; Text("Your launcher will ask you to confirm. Swipe up or down to scroll through all four pages of the same widget.", color = Color(Design.Grey)) }
         }
         Action(if (page == 2) "Let's walk →" else if (page == 0) "Continue →" else "Keep this goal →") { if (page < 2) page++ else model.finishSetup() }
         TextButton({ model.finishSetup() }) { Text("Set up later") }

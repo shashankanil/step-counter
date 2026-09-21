@@ -2,5 +2,5 @@
     android:minWidth="140dp" android:minHeight="140dp" android:targetCellWidth="2" android:targetCellHeight="2"
     android:minResizeWidth="140dp" android:minResizeHeight="140dp"
     android:resizeMode="horizontal|vertical" android:updatePeriodMillis="1800000"
-    android:initialLayout="@layout/step_page" android:previewImage="@drawable/circle_preview"
+    android:initialLayout="@layout/circle_widget" android:previewImage="@drawable/circle_preview"
     android:description="@string/circle_description" android:widgetCategory="home_screen" />

@@ -1,8 +1,16 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@drawable/widget_surface">
-    <AdapterViewFlipper android:id="@+id/step_flipper" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:autoStart="false" android:loopViews="true" android:animateFirstView="false" android:inAnimation="@animator/page_in" android:outAnimation="@animator/page_out" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center" android:orientation="horizontal">
-        <TextView android:id="@+id/previous_page" android:layout_width="48dp" android:layout_height="48dp" android:gravity="center" android:text="⌃" android:textColor="#B4B4B4" android:textSize="22sp" android:contentDescription="Previous widget page" />
-        <TextView android:id="@+id/page_indicator" android:layout_width="wrap_content" android:layout_height="48dp" android:gravity="center" android:text="● · · ·" android:textColor="#B4B4B4" android:textSize="12sp" />
-        <TextView android:id="@+id/next_page" android:layout_width="48dp" android:layout_height="48dp" android:gravity="center" android:text="⌄" android:textColor="#B4B4B4" android:textSize="22sp" android:contentDescription="Next widget page" />
-    </LinearLayout>
-</LinearLayout>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_surface">
+    <ListView
+        android:id="@+id/step_pages"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:scrollbars="none"
+        android:listSelector="@android:color/transparent"
+        android:cacheColorHint="@android:color/transparent"
+        android:overScrollMode="never"
+        android:scrollingCache="false" />
+</FrameLayout>

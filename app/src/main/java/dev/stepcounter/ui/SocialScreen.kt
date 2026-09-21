@@ -8,6 +8,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
 import dev.stepcounter.data.social.SocialRepository
@@ -100,18 +103,28 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
         Heading("Together", if (page == "Compare") model.selected else "A little company.")
         if (page != "Overview") TextButton({ page = "Overview" }) { Text("← People & groups") }
         if (page == "Overview") {
-            Column {
+            Tile {
+                Eyebrow("Walk with someone")
+                Text("Invite a friend or find your people in a group.", color = Color(Design.Grey))
                 Action("Add friend", !model.busy) { page = "Friends" }
-                TextButton({ page = "Groups" }) { Text("Create or join group") }
+                OutlinedButton({ page = "Groups" }) { Text("Create or join a group") }
             }
-            if (model.selected.isNotBlank()) TextButton({ page = "Compare" }) { Text("Pinned compare · ${model.selected} →") }
+            if (model.selected.isNotBlank()) Tile {
+                Eyebrow("Pinned comparison")
+                Text(model.selected, fontSize = 22.sp)
+                Text("Your selected friend or group also appears on the Comparison widget page.", color = Color(Design.Grey))
+                Action("View comparison") { page = "Compare" }
+            }
         }
         if (model.message.isNotBlank()) Text(model.message)
         if (model.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         when (page) {
             "Overview" -> {
                 Eyebrow("People")
-                if (model.friends.isEmpty()) Text("No people loaded. Add a friend by their Google account email.")
+                if (model.friends.isEmpty()) Tile {
+                    Text(if (model.busy) "Loading your people…" else "Room for a walking companion", fontSize = 22.sp)
+                    Text("Friends and requests appear here. Use Add friend to invite someone by their Google account email.", color = Color(Design.Grey))
+                }
                 model.friends.forEach { friend -> Tile {
                     Text(friend.getString("name"), fontSize = 22.sp)
                     val accepted = friend.getString("status") == "accepted"
@@ -119,15 +132,18 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
                     if (!accepted && !friend.getBoolean("outgoing")) Action("Accept", !model.busy) {
                         model.mutate("/friends/${friend.getString("id")}/accept", JSONObject())
                     }
-                    if (accepted) TextButton({ model.select("friend=${friend.getString("userId")}", friend.getString("name")); page = "Compare" }, enabled = !model.busy) { Text("Compare →") }
+                    if (accepted) OutlinedButton({ model.select("friend=${friend.getString("userId")}", friend.getString("name")); page = "Compare" }, enabled = !model.busy) { Text("Compare & pin") }
                 } }
                 Eyebrow("Groups")
-                if (model.groups.isEmpty()) Text("No groups loaded. Start one or join with an invite code.")
+                if (model.groups.isEmpty()) Tile {
+                    Text(if (model.busy) "Loading your groups…" else "A shared reason to get moving", fontSize = 22.sp)
+                    Text("Create a group for your people, or join one with an invite code. Your groups appear here once loaded.", color = Color(Design.Grey))
+                }
                 model.groups.forEach { group -> Tile {
                     Text(group.getString("name"), fontSize = 22.sp)
                     Text("Joined")
                     androidx.compose.foundation.text.selection.SelectionContainer { Text("Invite code: ${group.getString("code")}") }
-                    TextButton({ model.select("group=${group.getString("id")}", group.getString("name")); page = "Compare" }, enabled = !model.busy) { Text("Compare →") }
+                    OutlinedButton({ model.select("group=${group.getString("id")}", group.getString("name")); page = "Compare" }, enabled = !model.busy) { Text("Compare & pin") }
                 } }
             }
             "Friends" -> {
@@ -157,7 +173,11 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
                 Text(model.selected.ifBlank { "Choose a friend or group to compare." }, fontSize = 22.sp)
                 Text("Pinned to your widget. Seven days includes today. Missing totals are shown as unavailable.")
                 val result = model.comparison
-                if (result == null) Text("No comparison available. Select a target and refresh when connected.")
+                if (result == null) Tile {
+                    Eyebrow("Comparison")
+                    Text(if (model.busy) "Fetching the latest totals…" else "No totals available yet", fontSize = 22.sp)
+                    Text("Your selection is saved. Refresh when connected to try again. People who have not enabled sharing appear as unavailable.", color = Color(Design.Grey))
+                }
                 else {
                     Text("Last fetched ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date(result.optLong("fetchedAt")))}")
                     val members = result.getJSONArray("members")
@@ -177,7 +197,7 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
         Tile {
             Eyebrow("Step sharing")
             Text("Opt in to upload daily totals. Accepted friends and members of your groups can see today and the last seven days. Turning off deletes uploaded totals.")
-            Row {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Switch(model.enabled, { model.sharing(it) }, enabled = !model.busy)
                 Text(if (model.enabled) "Sharing enabled" else "Steps stay on this device")
             }
@@ -186,6 +206,6 @@ class SocialViewModel(app: Application) : AndroidViewModel(app) {
                 Action("Retry turning off", !model.busy) { model.sharing(false) }
             }
         }
-        Action("Refresh", !model.busy) { model.refresh() }
+        OutlinedButton({ model.refresh() }, enabled = !model.busy) { Text("Refresh") }
     }
 }

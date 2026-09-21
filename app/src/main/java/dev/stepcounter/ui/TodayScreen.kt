@@ -48,9 +48,15 @@ import java.util.Date
         }
         Tile {
             Eyebrow("Your rhythm")
-            TextButton(history) { Text("History →") }
-            TextButton(widgets) { Text("Home screen widgets →") }
+            Text("See how your days add up.", color = Color(Design.Grey))
+            Action("View history", onClick = history)
+            Action("Home screen widgets", onClick = widgets)
         }
-        if (s.steps == null) Text("Your next chapter starts with a step. Connect Health Connect in You to see your movement here.", color = Color(Design.Grey))
+        if (s.steps == null) Tile {
+            Eyebrow("Ready when you are")
+            Text("Connect your steps", fontSize = 22.sp)
+            Text("Choose Health Connect in You to bring your daily movement here.", color = Color(Design.Grey))
+            Action("Set up in You", onClick = profile)
+        }
     }
 }
