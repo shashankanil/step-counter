@@ -21,8 +21,7 @@ import java.util.Date
     Page {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Heading(s.today.format(DateTimeFormatter.ofPattern("EEE, dd MMM")), "Find your stride.", Modifier.weight(1f))
-            FilledTonalButton(profile, colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color(Design.White), contentColor = Color.Black), shape = CircleShape, contentPadding = PaddingValues(0.dp),
-                modifier = Modifier.size(52.dp).semantics { contentDescription = "Edit profile, initial ${s.initial}" }) { Text(s.initial, fontSize = 22.sp) }
+            TextButton(profile) { Text("You ↗") }
         }
         Tile {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Eyebrow("Daily movement"); Eyebrow("${s.percent}%") }

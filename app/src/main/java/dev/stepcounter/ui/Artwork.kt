@@ -22,29 +22,25 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.*
 
-fun number(value: Long?) = value?.let { NumberFormat.getIntegerInstance(Locale.US).format(it) } ?: "--"
+fun number(value: Long?) = value?.let { NumberFormat.getIntegerInstance(Locale.UK).format(it) } ?: "--"
 @Composable fun Eyebrow(text: String) {
     Text(text.uppercase(Locale.ROOT), color = Color(0xFFB4B4B4), fontSize = 11.sp, letterSpacing = 2.sp)
 }
 @Composable fun Matrix(value: Long?, modifier: Modifier = Modifier, label: String = "steps", centered: Boolean = false) {
-    val text = number(value)
-    Canvas(modifier.fillMaxWidth().height(58.dp).semantics {
+    Text(number(value), modifier.fillMaxWidth().semantics {
         contentDescription = "${value ?: "Unavailable"} $label"
-    }) {
-        val patterns = text.map { WidgetArtwork.glyphs.getValue(it) }.map { it.split('/') }
-        val columns = patterns.sumOf { it[0].length + 1 } - 1
-        val pitch = min(size.width / (columns + 1), size.height / 8)
-        var x = if (centered) (size.width - (columns - 1) * pitch) / 2 else pitch / 2
-        patterns.forEach { rows ->
-            rows.forEachIndexed { row, line -> line.forEachIndexed { col, c ->
-                if (c == '1') drawCircle(Color(Design.White), pitch * .32f, Offset(x + col * pitch, pitch + row * pitch))
-            } }
-            x += (rows[0].length + 1) * pitch
-        }
-    }
+    }, fontSize = 36.sp, letterSpacing = (-1).sp,
+        textAlign = if (centered) androidx.compose.ui.text.style.TextAlign.Center else androidx.compose.ui.text.style.TextAlign.Start,
+        maxLines = 1)
+
 }
 @Composable fun WidgetPreview(kind: WidgetKind, summary: StepSummary, modifier: Modifier = Modifier) {
-    val bitmap = remember(kind, summary) { WidgetArtwork.render(kind, summary).asImageBitmap() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val social = dev.stepcounter.data.social.SocialRepository(context)
+    val cached = social.cachedComparison
+    val bitmap = remember(kind, summary, cached?.toString(), social.targetName) {
+        WidgetArtwork.render(kind, summary, comparison = cached, targetName = social.targetName).asImageBitmap()
+    }
     Image(bitmap, "${kind.title}. ${summary.steps ?: "Unavailable"} steps. ${summary.percent}% of goal.", modifier.aspectRatio(1f))
 }
 @Composable fun GoalOrbit(summary: StepSummary, modifier: Modifier = Modifier) {

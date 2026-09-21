@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 data class StepUiState(
     val summary: StepSummary = StepSummary(), val loading: Boolean = true,
     val busy: Boolean = false, val permissions: Set<String> = emptySet(),
-    val account: dev.stepcounter.data.auth.AuthProfile? = null, val authBusy: Boolean = false,
+    val account: dev.stepcounter.data.auth.AuthProfile? = null, val authBusy: Boolean = false, val authMessage: String = "",
     val onboarded: Boolean = false, val message: String = "",
 )
 
@@ -58,19 +58,19 @@ class StepViewModel(application: Application) : AndroidViewModel(application) {
     }
     private fun accountAction(action: suspend () -> String) {
         if (mutable.value.authBusy) return
-        mutable.update { it.copy(authBusy = true) }
+        mutable.update { it.copy(authBusy = true, authMessage = "") }
         viewModelScope.launch {
             try {
                 val message = action()
-                mutable.update { it.copy(message = message) }
+                mutable.update { it.copy(message = message, authMessage = message) }
             } catch (e: CancellationException) { throw e
             } catch (_: androidx.credentials.exceptions.GetCredentialCancellationException) {
-                mutable.update { it.copy(message = "Sign-in cancelled. You can keep using local steps.") }
+                mutable.update { it.copy(message = "Sign-in cancelled. You can keep using local steps.", authMessage = "Sign-in cancelled. Try again whenever you are ready.") }
             } catch (_: androidx.credentials.exceptions.NoCredentialException) {
-                mutable.update { it.copy(message = "No Google account is available. Add one on this device and try again.") }
+                mutable.update { it.copy(authMessage = "No Google account is available. Add one in Android Settings → Accounts and try again.") }
             } catch (_: Exception) {
-                mutable.update { it.copy(message = if (dev.stepcounter.BuildConfig.GOOGLE_WEB_CLIENT_ID.isBlank())
-                    "Google sign-in is not configured in this build." else "Could not sign in. Check your connection and try again.") }
+                mutable.update { it.copy(authMessage = if (dev.stepcounter.BuildConfig.GOOGLE_WEB_CLIENT_ID.isBlank())
+                    "Google sign-in needs GOOGLE_WEB_CLIENT_ID in local.properties. Rebuild the APK." else "Could not sign in. Check your connection, Google Play services and the registered package / signing certificate, then retry.") }
             } finally {
                 mutable.update { it.copy(account = auth.profile, authBusy = false) }
                 try {

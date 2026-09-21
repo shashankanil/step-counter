@@ -60,7 +60,7 @@ object WidgetArtwork {
             }
         }
         fun pages(selected: Int) { repeat(4) { dot(191f, 82f + it * 12, 2.3f, if (it == selected) Design.White else Design.Grey) } }
-        fun number(value: Long?) = value?.let { NumberFormat.getIntegerInstance(java.util.Locale.US).format(it) } ?: "--"
+        fun number(value: Long?) = value?.let { NumberFormat.getIntegerInstance(java.util.Locale.UK).format(it) } ?: "--"
         p.color = Design.Surface.toInt()
         c.drawRoundRect(0f, 0f, 200f, 200f, 30f, 30f, p)
         when (kind) {
@@ -124,7 +124,7 @@ object WidgetArtwork {
                     val fetched = comparison.optLong("fetchedAt")
                     val stamp = java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.UK).format(java.util.Date(fetched))
                     label("Fetched " + stamp, 18f, 173f, 8f, Design.Grey)
-                    label(if (others.size > 2) "+${others.size - 2} more in Social" else "— means unavailable", 18f, 187f, 8f, Design.Grey)
+                    label(if (others.size > 2) "+${others.size - 2} more in Social" else "-- means unavailable", 18f, 187f, 8f, Design.Grey)
                 }
                 pages(3)
             }
