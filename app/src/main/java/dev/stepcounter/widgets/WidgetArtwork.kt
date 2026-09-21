@@ -8,7 +8,7 @@ import java.text.NumberFormat
 import kotlin.math.*
 
 enum class WidgetKind(val title: String) {
-    WALK("Walk progress"), STATS("Stats stack"), MONTH("Month grid"), CIRCULAR("Circular metric")
+    WALK("Walk progress"), STATS("Stats stack"), MONTH("Month grid"), COMPARISON("Comparison")
 }
 
 /** Original geometric artwork. No bundled typeface or third-party brand assets. */
@@ -27,7 +27,7 @@ object WidgetArtwork {
         ',' to "0/0/0/0/0/1/1", '-' to "000/000/000/111/000/000/000",
         'S' to "0111/1000/1000/0110/0001/0001/1110"
     )
-    fun render(kind: WidgetKind, summary: StepSummary, size: Int = 480): Bitmap {
+    fun render(kind: WidgetKind, summary: StepSummary, size: Int = 480, comparison: org.json.JSONObject? = null, targetName: String = ""): Bitmap {
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val c = Canvas(bitmap)
         c.scale(size / 200f, size / 200f)
@@ -59,15 +59,14 @@ object WidgetArtwork {
                 dot(x + dx * pitch, y + dy * pitch, pitch * .39f)
             }
         }
-        fun pages(selected: Int) { repeat(3) { dot(191f, 88f + it * 12, 2.3f, if (it == selected) Design.White else Design.Grey) } }
+        fun pages(selected: Int) { repeat(4) { dot(191f, 82f + it * 12, 2.3f, if (it == selected) Design.White else Design.Grey) } }
         fun number(value: Long?) = value?.let { NumberFormat.getIntegerInstance(java.util.Locale.US).format(it) } ?: "--"
         p.color = Design.Surface.toInt()
-        if (kind == WidgetKind.CIRCULAR) c.drawCircle(100f, 100f, 100f, p)
-        else c.drawRoundRect(0f, 0f, 200f, 200f, 30f, 30f, p)
+        c.drawRoundRect(0f, 0f, 200f, 200f, 30f, 30f, p)
         when (kind) {
             WidgetKind.WALK -> {
                 val x = 15f + summary.progress * 142f
-                repeat(21) { dot(12f + it * 8.3f, 100f, 1f, Design.Grey) }
+                repeat(21) { dot(12f + it * 8.3f, 100f, if (it < summary.progress * 20) 2f else 1f, if (it < summary.progress * 20) Design.White else Design.Grey) }
                 figure(x, 83f, 4.3f)
                 pages(0)
                 label("${summary.percent}%", 18f, 176f, 10f, Design.Grey)
@@ -93,24 +92,44 @@ object WidgetArtwork {
                         dot(22f + index % 7 * 25.5f, 26f + index / 7 * 20f, radius, color)
                     }
                 }
+                pages(2)
                 "MTWTFSS".forEachIndexed { i, ch -> label(ch.toString(), 18f + i * 25.5f, 188f, 11f) }
 
             }
-            WidgetKind.CIRCULAR -> {
-                repeat(60) { i ->
-                    val angle = (i * 6 - 90) * PI / 180
-                    dot(100f + cos(angle).toFloat() * 82, 100f + sin(angle).toFloat() * 82,
-                        2.4f, if (i < (summary.progress * 60).toInt()) Design.White else 0xFF484848)
+            WidgetKind.COMPARISON -> {
+                label("TODAY / COMPARE", 18f, 27f, 9f, Design.Grey)
+                label(targetName.take(24).ifBlank { "A little company." }, 18f, 47f, 12f)
+                if (comparison == null) {
+                    label("Choose a friend or group", 18f, 96f, 10f)
+                    label("in Social, then refresh.", 18f, 112f, 10f, Design.Grey)
+                } else {
+                    val array = comparison.optJSONArray("members") ?: org.json.JSONArray()
+                    val others = (0 until array.length()).map { array.getJSONObject(it) }
+                        .filter { it.optString("id") != comparison.optString("selfId") }
+                    val rows = listOf("You" to summary.steps) + others.take(2).map {
+                        it.optString("name").take(17) to if (it.isNull("today")) null else it.optLong("today")
+                    }
+                    val maxValue = rows.mapNotNull { it.second }.maxOrNull()?.coerceAtLeast(1) ?: 1
+                    rows.forEachIndexed { i, (name, count) ->
+                        val y = 73f + i * 33f
+                        label(name, 18f, y, 9f, Design.Grey)
+                        label(number(count), 130f, y, 10f)
+                        p.color = 0xFF383838.toInt()
+                        c.drawRoundRect(18f, y + 8f, 174f, y + 12f, 2f, 2f, p)
+                        if (count != null && count > 0) {
+                            p.color = (if (i == 0) Design.White else Design.Grey).toInt()
+                            c.drawRoundRect(18f, y + 8f, 18f + 156f * count.toFloat() / maxValue, y + 12f, 2f, 2f, p)
+                        }
+                    }
+                    val fetched = comparison.optLong("fetchedAt")
+                    val stamp = java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.UK).format(java.util.Date(fetched))
+                    label("Fetched " + stamp, 18f, 173f, 8f, Design.Grey)
+                    label(if (others.size > 2) "+${others.size - 2} more in Social" else "— means unavailable", 18f, 187f, 8f, Design.Grey)
                 }
-                figure(91f, 47f, 3f)
-                val text = number(summary.steps)
-                val pitch = min(3.7f, 128f / (text.length * 6 - 1))
-                matrix(text, 100f - (text.length * 6 - 2) * pitch / 2, 92f, 128f, pitch)
-                label("STEPS", 83f, 135f, 10f, Design.Grey)
-                dot(100f, 150f, 2.5f, Design.Red)
+                pages(3)
             }
         }
-        if (summary.steps == null && kind != WidgetKind.MONTH) label("OPEN TO CONNECT", 46f, 193f, 7f, Design.Grey)
+        if (summary.steps == null && kind != WidgetKind.MONTH && kind != WidgetKind.COMPARISON) label("OPEN TO CONNECT", 46f, 193f, 7f, Design.Grey)
         return bitmap
     }
 }
