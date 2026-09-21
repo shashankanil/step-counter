@@ -6,6 +6,7 @@ import java.time.YearMonth
 data class StepSummary(
     val today: LocalDate = LocalDate.now(),
     val days: Map<LocalDate, Long> = emptyMap(),
+    val initial: String = "S",
     val goal: Int = 10_000,
     val updatedAt: Long = 0,
     val status: String = "Connect Health Connect",
@@ -27,4 +28,16 @@ fun monthCells(today: LocalDate): List<LocalDate?> {
         val day = index - offset + 1
         if (day in 1..month.lengthOfMonth()) month.atDay(day) else null
     }
+}
+
+/** Current run at the current goal; an unfinished today does not erase yesterday's run.
+ * Missing history bounds the result, so the UI describes this as a recorded streak. */
+fun StepSummary.recordedStreak(): Int {
+    var date = if ((steps ?: 0) >= goal) today else today.minusDays(1)
+    var count = 0
+    while ((days[date] ?: -1) >= goal) {
+        count++
+        date = date.minusDays(1)
+    }
+    return count
 }

@@ -37,4 +37,15 @@ class StepSummaryTest {
         val seconds = date.plusDays(1).atStartOfDay(zone).toEpochSecond() - date.atStartOfDay(zone).toEpochSecond()
         assertEquals(23 * 3600L, seconds)
     }
+    @Test fun streakKeepsYesterdayUntilTodayReachesGoal() {
+        val days = mapOf(today to 100L, today.minusDays(1) to 10000L, today.minusDays(2) to 12000L)
+        assertEquals(2, StepSummary(today = today, days = days).recordedStreak())
+        assertEquals(3, StepSummary(today = today, days = days + (today to 10000L)).recordedStreak())
+    }
+    @Test fun streakStopsAtMissingOrBelowGoalDays() {
+        assertEquals(0, StepSummary(today = today).recordedStreak())
+        val days = mapOf(today to 10000L, today.minusDays(2) to 10000L)
+        assertEquals(1, StepSummary(today = today, days = days).recordedStreak())
+        assertEquals(0, StepSummary(today = today, days = days, goal = 20000).recordedStreak())
+    }
 }

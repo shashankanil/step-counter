@@ -16,11 +16,20 @@ class StepRepository(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
     val health = HealthSource(context)
     fun setGoal(value: Int) { require(value in 100..100_000); prefs.edit().putInt("goal", value).apply() }
+    var initial: String
+        get() = prefs.getString("initial", "S") ?: "S"
+        set(value) { prefs.edit().putString("initial", value.take(1).uppercase(java.util.Locale.ROOT)).apply() }
+    var setupSeen: Boolean
+        get() = prefs.getBoolean("setup_seen", false)
+        set(value) { prefs.edit().putBoolean("setup_seen", value).apply() }
+    var onboarded: Boolean
+        get() = prefs.getBoolean("onboarded", false)
+        set(value) { prefs.edit().putBoolean("onboarded", value).apply() }
     suspend fun snapshot(): StepSummary {
         val zone = ZoneId.systemDefault().id
         val rows = if (prefs.getString("zone", zone) == zone) db.steps().all() else emptyList()
         return StepSummary(days = rows.associate { LocalDate.parse(it.date) to it.steps },
-            goal = prefs.getInt("goal", 10_000), updatedAt = rows.maxOfOrNull { it.syncedAt } ?: 0,
+            initial = initial, goal = prefs.getInt("goal", 10_000), updatedAt = rows.maxOfOrNull { it.syncedAt } ?: 0,
             status = prefs.getString("status", "Connect Health Connect")!!)
     }
     suspend fun sync(background: Boolean): Boolean = lock.withLock {

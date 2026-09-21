@@ -2,7 +2,7 @@
 <uses-permission android:name="android.permission.health.READ_STEPS" />
 <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
 <queries><package android:name="com.google.android.apps.healthdata" /></queries>
-<application android:name=".StepApplication" android:allowBackup="false" android:label="@string/app_name"
+<application android:name=".StepApplication" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:label="@string/app_name"
     android:icon="@drawable/ic_steps" android:theme="@style/Theme.StepCounter" android:supportsRtl="true">
 <activity android:name=".ui.MainActivity" android:exported="true">
 <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>

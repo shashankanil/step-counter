@@ -13,7 +13,7 @@ enum class WidgetKind(val title: String) {
 
 /** Original geometric artwork. No bundled typeface or third-party brand assets. */
 object WidgetArtwork {
-    private val glyphs = mapOf(
+    val glyphs = mapOf(
         '0' to "01110/10001/10011/10101/11001/10001/01110",
         '1' to "00100/01100/00100/00100/00100/00100/01110",
         '2' to "01110/10001/00001/00010/00100/01000/11111",
@@ -62,7 +62,7 @@ object WidgetArtwork {
         fun avatar() {
             dot(162f, 162f, 24f)
             p.color = Design.Surface.toInt(); p.textSize = 20f; p.typeface = Typeface.MONOSPACE
-            c.drawText("S", 156f, 169f, p)
+            c.drawText(summary.initial, 156f, 169f, p)
         }
         fun pages(selected: Int) { repeat(3) { dot(191f, 88f + it * 12, 2.3f, if (it == selected) Design.White else Design.Grey) } }
         fun number(value: Long?) = value?.let { NumberFormat.getIntegerInstance(java.util.Locale.US).format(it) } ?: "--"
@@ -101,7 +101,7 @@ object WidgetArtwork {
                 "MTWTFSS".forEachIndexed { i, ch -> label(ch.toString(), 18f + i * 25.5f, 188f, 11f) }
                 // Chip sits above weekday labels to keep all seven labels readable.
                 dot(164f, 160f, 19f); p.color = Design.Surface.toInt(); p.textSize = 16f
-                c.drawText("S", 159f, 166f, p)
+                c.drawText(summary.initial, 159f, 166f, p)
             }
             WidgetKind.CIRCULAR -> {
                 repeat(60) { i ->
