@@ -62,6 +62,11 @@ test('social flow: requests, recipient-only acceptance, groups, consent and priv
     assert.equal(compared.members[0].sevenDay, 7021);
     assert.equal(compared.members[1].today, null);
     assert.equal(compared.members[1].sharing, false);
+    await req('b', '/sync', 'PUT', { enabled: true });
+    await req('b', '/steps', 'PUT', { days: [days[0]] });
+    const partial = await (await req('a', '/compare?friend=b')).json();
+    assert.equal(partial.members[1].today, 1000);
+    assert.equal(partial.members[1].sevenDay, null);
     assert.equal((await req('c', '/compare?friend=a')).status, 403);
     const group = await (await req('a', '/groups', 'POST', { name: 'Morning walkers' })).json();
     assert.match(group.code, /^[A-F0-9]{12}$/);
@@ -73,7 +78,7 @@ test('social flow: requests, recipient-only acceptance, groups, consent and priv
     assert.equal((await req('c', '/groups')).status, 200);
     assert.deepEqual((await (await req('c', '/groups')).json()).groups, []);
     assert.equal((await req('a', '/sync', 'PUT', { enabled: false })).status, 200);
-    assert.equal((await db.query('SELECT * FROM shared_steps')).rows.length, 0);
+    assert.equal((await db.query('SELECT * FROM shared_steps WHERE user_id = \'a\'')).rows.length, 0);
     assert.equal((await req('a', '/steps', 'PUT', { days })).status, 403);
     const disabled = await (await req('b', '/compare?friend=a')).json();
     assert.equal(disabled.members[0].today, null);

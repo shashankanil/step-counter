@@ -17,7 +17,8 @@ export function createApp(auth: Pick<Auth, 'handler'> & { api: Pick<Auth['api'],
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (!session) return c.json({ error: 'Unauthorized' }, 401);
     const { id, name, email, image } = session.user;
-    return c.json({ user: { id, name, email, image }, syncEnabled: false });
+    const sharing = pool ? await pool.query('SELECT enabled FROM step_sharing WHERE user_id = $1', [id]) : null;
+    return c.json({ user: { id, name, email, image }, syncEnabled: sharing?.rows[0]?.enabled === true });
   });
   app.use('/api/*', async (c, next) => {
     const session = await auth.api.getSession({ headers: c.req.raw.headers });

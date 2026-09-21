@@ -68,13 +68,13 @@ class AuthRepository(context: Context) {
             .put("email", claims.optString("email", google.id))
             .put("givenName", claims.optString("given_name", google.givenName.orEmpty()))
             .put("photo", claims.optString("picture", google.profilePictureUri?.toString().orEmpty()))
-            .put("idToken", google.idToken).put("sessionToken", "")
+            .put("idToken", google.idToken).put("sessionToken", "").put("sessionMode", "local")
         withContext(Dispatchers.IO) { save(identity) }
         val session = try { if (BuildConfig.API_CONFIGURED) exchange(google.idToken) else null }
         catch (e: kotlinx.coroutines.CancellationException) { throw e }
         catch (_: Exception) { null }
         withContext(Dispatchers.IO) {
-            save(identity.put("sessionToken", session.orEmpty()))
+            save(identity.put("sessionToken", session.orEmpty()).put("sessionMode", if (session == null) "local" else "cloud"))
         }
     }
     private suspend fun exchange(token: String): String = withContext(Dispatchers.IO) {

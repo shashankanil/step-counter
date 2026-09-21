@@ -72,7 +72,7 @@ import dev.stepcounter.widgets.WidgetKind
                 Text(if (health.backgroundPermission in state.permissions) "Manage in Health Connect ↗" else "Allow background access ↗")
             }
         }
-        Tile { Eyebrow("Private by design"); Text("Optional account.\nSteps stay local.", fontSize = 23.sp); TextButton(privacy) { Text("Privacy & permissions ↗") } }
+        Tile { Eyebrow("Private by design"); Text("Optional account.\nSharing is your choice.", fontSize = 23.sp); TextButton(privacy) { Text("Privacy & permissions ↗") } }
         Eyebrow("Step / Counter   ·   0.2.0")
         Text("Original dot artwork. Built for a quieter relationship with movement. No ads or analytics. Walk together in Social when you choose to share.", color = Color(Design.Grey), fontSize = 12.sp)
     }
@@ -104,9 +104,9 @@ import dev.stepcounter.widgets.WidgetKind
 }
 @Composable fun PrivacyContent(done: () -> Unit) {
     Page {
-        Heading("Privacy & permissions", "Your steps\nstay here.")
+        Heading("Privacy & permissions", "Your steps.\nYour choice.")
         Tile { Eyebrow("Read only"); Text("Step Counter reads step totals from Health Connect to show today's progress, a seven-day average and a monthly calendar. Optional background access refreshes your widgets when the app is closed.") }
-        Tile { Eyebrow("On this device"); Text("Daily totals stay in a local Room database until you explicitly opt into sync. Enable step sharing in Social to upload daily totals for comparisons. Accepted friends and fellow group members can view shared totals. Turning sharing off deletes cloud totals when connected; offline deletion remains pending until you reconnect. An account is optional. Google sign-in shares your identity with Google and, when connected, our account service; it never uploads steps. Your profile and tokens are encrypted on this device. No advertising or analytics. Android backup is disabled. No data is written to Health Connect.") }
+        Tile { Eyebrow("On this device"); Text("Daily totals stay in a local Room database until you explicitly opt into sync. Enable step sharing in Social to upload daily totals for comparisons. Accepted friends and fellow group members can view shared totals. Turning sharing off deletes cloud totals when connected; offline deletion remains pending until you reconnect. An account is optional. Google sign-in shares your identity with Google and, when connected, our account service; it never uploads steps. Sign-in tokens are encrypted on this device. Comparisons are cached locally with their fetch time. No advertising or analytics. Android backup is disabled. No data is written to Health Connect.") }
         Tile { Eyebrow("Always in your control"); Text("Revoke permissions in Health Connect at any time. Detected step-permission revocation clears the local cache on the next sync. Clear this app's storage or uninstall to remove all local settings and totals immediately.") }
         Tile { Eyebrow("Reading the dots"); Text("The seven-day average uses the previous seven completed days. Grey calendar dots show recorded activity, white dots mean the current goal was reached, and red marks today. Tiny dots indicate zero, unavailable or future data.") }
         Action("Done", onClick = done)

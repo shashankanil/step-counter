@@ -16,7 +16,9 @@ class SocialRepository(context: Context) {
     private val auth = AuthRepository(context)
     private val prefs = context.getSharedPreferences("social", Context.MODE_PRIVATE)
     private val account = auth.profile?.email.orEmpty()
-    private fun key(name: String) = "$account:$name"
+    private val accountKey = java.security.MessageDigest.getInstance("SHA-256")
+        .digest(account.toByteArray()).joinToString("") { "%02x".format(it) }
+    private fun key(name: String) = "$accountKey:$name"
     val enabled get() = account.isNotBlank() && prefs.getBoolean(key("enabled"), false)
     val pendingDisable get() = prefs.getBoolean(key("pendingDisable"), false)
     val target get() = prefs.getString(key("target"), "").orEmpty()
@@ -52,7 +54,7 @@ class SocialRepository(context: Context) {
             }
             json
         } catch (e: java.io.IOException) {
-            error("Cloud service unreachable. Check your connection and API_BASE_URL. Nothing was queued.")
+            error("Cloud service unreachable. Check your connection and API_BASE_URL. Refresh to confirm any changes; no offline actions are queued.")
         } finally { conn.disconnect() }
     }
     suspend fun setSharing(value: Boolean) {
