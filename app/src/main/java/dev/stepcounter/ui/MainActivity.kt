@@ -45,12 +45,7 @@ class MainActivity : ComponentActivity() {
                     else -> model.message("Health Connect requires Android 9 or newer and a supported provider.")
                 }
             }, pin = { kind ->
-                val cls = when(kind) {
-                    WidgetKind.WALK -> WalkProgressReceiver::class.java
-                    WidgetKind.STATS -> StatsStackReceiver::class.java
-                    WidgetKind.MONTH -> MonthGridReceiver::class.java
-                    WidgetKind.CIRCULAR -> CircularMetricReceiver::class.java
-                }
+                val cls = StepWidgetReceiver::class.java
                 val manager = getSystemService(AppWidgetManager::class.java)
                 if (manager.isRequestPinAppWidgetSupported) {
                     runCatching { manager.requestPinAppWidget(ComponentName(this, cls), null, null) }

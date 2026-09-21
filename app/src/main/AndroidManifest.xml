@@ -14,16 +14,8 @@
 <activity-alias android:name="ViewPermissionUsageActivity" android:exported="true" android:targetActivity=".ui.PrivacyActivity" android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
 <intent-filter><action android:name="android.intent.action.VIEW_PERMISSION_USAGE" /><category android:name="android.intent.category.HEALTH_PERMISSIONS" /></intent-filter>
 </activity-alias>
-<receiver android:name=".widgets.WalkProgressReceiver" android:exported="false" android:label="@string/walk_widget">
+<receiver android:name=".widgets.StepWidgetReceiver" android:exported="false" android:label="@string/app_name">
 <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
 <meta-data android:name="android.appwidget.provider" android:resource="@xml/walk_widget" /></receiver>
-<receiver android:name=".widgets.StatsStackReceiver" android:exported="false" android:label="@string/stats_widget">
-<intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
-<meta-data android:name="android.appwidget.provider" android:resource="@xml/stats_widget" /></receiver>
-<receiver android:name=".widgets.MonthGridReceiver" android:exported="false" android:label="@string/month_widget">
-<intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
-<meta-data android:name="android.appwidget.provider" android:resource="@xml/month_widget" /></receiver>
-<receiver android:name=".widgets.CircularMetricReceiver" android:exported="false" android:label="@string/circular_widget">
-<intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
-<meta-data android:name="android.appwidget.provider" android:resource="@xml/circular_widget" /></receiver>
+<service android:name=".widgets.StepPageService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false" />
 </application></manifest>

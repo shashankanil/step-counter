@@ -59,11 +59,6 @@ object WidgetArtwork {
                 dot(x + dx * pitch, y + dy * pitch, pitch * .39f)
             }
         }
-        fun avatar() {
-            dot(162f, 162f, 24f)
-            p.color = Design.Surface.toInt(); p.textSize = 20f; p.typeface = Typeface.MONOSPACE
-            c.drawText(summary.initial, 156f, 169f, p)
-        }
         fun pages(selected: Int) { repeat(3) { dot(191f, 88f + it * 12, 2.3f, if (it == selected) Design.White else Design.Grey) } }
         fun number(value: Long?) = value?.let { NumberFormat.getIntegerInstance(java.util.Locale.US).format(it) } ?: "--"
         p.color = Design.Surface.toInt()
@@ -74,7 +69,7 @@ object WidgetArtwork {
                 val x = 15f + summary.progress * 142f
                 repeat(21) { dot(12f + it * 8.3f, 100f, 1f, Design.Grey) }
                 figure(x, 83f, 4.3f)
-                pages(0); avatar()
+                pages(0)
                 label("${summary.percent}%", 18f, 176f, 10f, Design.Grey)
             }
             WidgetKind.STATS -> {
@@ -83,7 +78,7 @@ object WidgetArtwork {
                 label("${summary.percent}%", 154f, 68f, 10f)
                 matrix(number(summary.average), 22f, 132f, 106f, 3.6f)
                 label("7-DAY AVERAGE", 18f, 179f, 9f)
-                pages(1); avatar()
+                pages(1)
             }
             WidgetKind.MONTH -> {
                 monthCells(summary.today).forEachIndexed { index, date ->
@@ -99,9 +94,7 @@ object WidgetArtwork {
                     }
                 }
                 "MTWTFSS".forEachIndexed { i, ch -> label(ch.toString(), 18f + i * 25.5f, 188f, 11f) }
-                // Chip sits above weekday labels to keep all seven labels readable.
-                dot(164f, 160f, 19f); p.color = Design.Surface.toInt(); p.textSize = 16f
-                c.drawText(summary.initial, 159f, 166f, p)
+
             }
             WidgetKind.CIRCULAR -> {
                 repeat(60) { i ->
