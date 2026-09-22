@@ -1,0 +1,9 @@
+<!-- AdapterViewFlipper requires ObjectAnimator, not legacy %p translate animations.
+     Fixed travel for the locked 2 × 2 widget; both page directions slide upwards. -->
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:propertyName="translationY"
+    android:valueFrom="0dp"
+    android:valueTo="-200dp"
+    android:valueType="floatType"
+    android:duration="250"
+    android:interpolator="@android:interpolator/fast_out_slow_in" />

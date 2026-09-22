@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Step Counter</string>
-    <string name="widget_description">Swipe up or down for Walk, Stats, Month and Comparison. Tap to open Step Counter.</string>
+    <string name="widget_description">Page through Walk, Stats, Month and Comparison: tap the top or bottom edge to change page. Tap the centre to open Step Counter. Fixed 2 × 2 size.</string>
     <string name="circle_name">Step Counter Circle</string>
     <string name="circle_description">A quiet circular goal ring. Touch and hold to resize.</string>
+    <string name="widget_previous_page">Top edge: tap for previous page</string>
+    <string name="widget_next_page">Bottom edge: tap for next page</string>
 </resources>

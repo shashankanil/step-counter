@@ -1,6 +1,6 @@
 # Step Counter
 
-A local-first Android step dashboard with resizable square and circular home-screen widgets. Quiet charcoal surfaces, crisp totals, selective dots and sparse red accents. Original artwork; no proprietary fonts, screenshot crops or branded assets.
+A local-first Android step dashboard with a fixed square home-screen widget and a resizable circular widget. Quiet charcoal surfaces, crisp totals, selective dots and sparse red accents. Original artwork; no proprietary fonts, screenshot crops or branded assets.
 
 ## Build
 
@@ -14,18 +14,22 @@ Minimum API 26; Health Connect needs a supported Android 9+ device. The app read
 
 ## The widget
 
-Add **Step Counter** from the launcher or Home → Home screen widgets. Scroll or flick vertically on the tile to move between four full-size pages:
+Add **Step Counter** from the launcher or Home → Home screen widgets. Tap the thin top or bottom edge of the tile to move between four snap pages:
 
 1. **Walk** — dotted walker on a progress path.
 2. **Stats** — today's steps and previous seven completed days' average.
 3. **Month** — Monday-first calendar; red today, white goal reached, grey activity.
 4. **Comparison** — you and a selected friend or group, simple bars and fetched timestamp.
 
-No profile/login letter chips appear in widget artwork. Tap a page to open the app. Start at 2 × 2 cells; square artwork fits resized bounds.
+No profile/login letter chips, arrow buttons or page dots appear in the widget. The transparent top and bottom page-turn targets are each 32dp tall; the centre remains tappable artwork and opens the app with a short tap. The square widget requests 2 × 2 cells (minimum 140dp) with resizing locked; exact cell dimensions depend on the launcher.
 
-A full-bleed `ListView` displays the pages without buttons, dots or other pagination controls. Each square row sizes to its artwork so one page fills a square tile. Scroll position is left to the launcher across refreshes; updates do not force the list back to the first page. Some launchers may treat vertical drags as home-screen scroll — try a decisive flick on the tile; Pixel and Samsung launchers are usually OK. API 31+ uses `RemoteViews.RemoteCollectionItems`; older devices use `StepPageService` / `RemoteViewsFactory`. Both read the same `StepRepository` snapshot and refresh after foreground/WorkManager sync. Collection IDs remain stable across updates. [Android collection widget documentation](https://developer.android.com/develop/ui/views/appwidgets/collections).
+`AdapterViewFlipper` provides discrete snap pagination: one full page at rest, with a 250ms vertical slide between pages. Incoming artwork slides from below and outgoing artwork slides upwards. Both next and previous use that same animation pair. Flipper requires `ObjectAnimator` resources, which cannot express legacy translate animation distances such as `100%p`; the locked-size widget uses a fixed 200dp travel distance instead. [AOSP AdapterViewAnimator animation loading](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/widget/AdapterViewAnimator.java).
 
-**Step Counter Circle** is an independently pinnable second provider: a walker inside a progress ring, transparent corners and a circular picker preview. Both providers support horizontal and vertical resizing (2 × 2 through roughly 4 × 4, launcher permitting). Options changes redraw Canvas artwork at a size derived from the allocation, capped at 420 px per page to bound bitmap memory. Rectangular allocations preserve artwork proportions. The square tile uses its entire surface for the scrolling artwork. Both providers refresh through `updateWidgets`.
+AOSP Flipper has no fling-swipe handling: tap the invisible edge targets to turn pages. `StackView` was rejected because of its perspective fan/peek of other cards; `ListView` was rejected because it allows free/partial scrolling. There is no full-surface touch overlay. Each widget saves its page index in SharedPreferences, wraps from Comparison to Walk (and back), restores it on data updates, and clears it when deleted. Page turns use partial RemoteViews updates; data refreshes publish the full widget.
+
+API 31+ uses `RemoteViews.RemoteCollectionItems`; older devices retain `StepPageService` / `RemoteViewsFactory`. Both read the same `StepRepository` snapshot and refresh after foreground/WorkManager sync. Collection IDs remain stable across updates. [Android collection widget documentation](https://developer.android.com/develop/ui/views/appwidgets/collections).
+
+**Step Counter Circle** remains an independently pinnable, single-page provider: a walker inside a progress ring, transparent corners and a circular picker preview. Circle still supports horizontal and vertical resizing (2 × 2 through roughly 4 × 4, launcher permitting). Options changes redraw Canvas artwork at a size derived from the allocation, capped at 420 px per page to bound bitmap memory. Rectangular allocations preserve artwork proportions. Both providers refresh through `updateWidgets`.
 
 ## Google identity
 
@@ -120,7 +124,7 @@ Android debug assembly, eight domain unit tests and lint are release checks. Ser
 
 No Android device is attached in this environment. Before release, exercise:
 
-- Launcher vertical scroll/flick through all four pages, tap to open, scroll retention across data refreshes, square/circle resize, TalkBack and process restart on pre-31 and API 31+ devices. Check decisive flicks on launchers that intercept vertical drags.
+- Launcher top/bottom edge taps advance exactly one full page and wrap through all four pages with a vertical slide; no partial scrolling, stacked peek or visible controls. Check centre taps open the app, independent page retention across data refreshes/process restart, deletion cleanup, square resize lock, unchanged single-page Circle resizing and TalkBack on pre-31 and API 31+ devices. Flipper does not support fling-swipe gestures.
 - Real Google account selection, backend-offline local identity, then online Better Auth exchange.
 - Two real accounts: request/accept, group join, consent, uploaded comparisons and offline opt-out retry.
 - Health Connect denial/revocation, background access, date rollover and time-zone changes.

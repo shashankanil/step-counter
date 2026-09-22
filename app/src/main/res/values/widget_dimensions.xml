@@ -1,0 +1,5 @@
+<resources>
+    <!-- Fixed surface: property animators need a dimension rather than %p. -->
+    <dimen name="widget_page_size">140dp</dimen>
+    <dimen name="widget_page_exit">-140dp</dimen>
+</resources>

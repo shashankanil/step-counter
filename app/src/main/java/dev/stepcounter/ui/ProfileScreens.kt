@@ -16,7 +16,7 @@ import dev.stepcounter.widgets.WidgetKind
 @Composable fun WidgetsScreen(summary: StepSummary, pin: (WidgetKind) -> Unit) {
     Page {
         Heading("Home screen", "Movement, at a glance.")
-        Text("Four quiet pages: Walk, Stats, Month and Compare. Swipe up or down on your home screen tile. Tap the artwork to open the app.", color = Color(Design.Grey))
+        Text("Four quiet pages: Walk, Stats, Month and Compare. Tap the top edge for the previous page or bottom edge for the next page, with a vertical slide. Tap the centre artwork to open the app.", color = Color(Design.Grey))
         val pager = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 4 })
         androidx.compose.foundation.pager.VerticalPager(state = pager, modifier = Modifier.fillMaxWidth().height(300.dp)) { index ->
             WidgetPreview(WidgetKind.entries[index], summary, Modifier.fillMaxHeight())
@@ -29,7 +29,7 @@ import dev.stepcounter.widgets.WidgetKind
         Action("Add Circle widget") { pin(WidgetKind.CIRCLE) }
         Tile {
             Eyebrow("Keep movement in sight")
-            Text("Touch and hold in your launcher to resize from 2 × 2 to around 4 × 4. Artwork redraws for the available size; rectangular spaces keep the tile square.")
+            Text("The square widget is fixed at 2 × 2. Touch and hold Circle in your launcher to resize from 2 × 2 to around 4 × 4. Circle artwork keeps its proportions.")
             Text("No pin support? Long-press your home screen → Widgets → Step Counter. Start at 2 × 2. Select a friend or group in Together for the Comparison page. Updates follow your latest sync.", color = Color(Design.Grey), fontSize = 13.sp)
         }
     }
@@ -109,7 +109,7 @@ import dev.stepcounter.widgets.WidgetKind
                 }
             }
             1 -> { Tile { Eyebrow("Daily goal"); Matrix(state.summary.goal.toLong()); Action("Set your goal", onClick = goal) }; Text("Start with something achievable. Change it any time in You.", color = Color(Design.Grey)) }
-            else -> { WidgetPreview(WidgetKind.STATS, state.summary, Modifier.fillMaxWidth(.8f)); Action("Add Step Counter widget") { pin(WidgetKind.STATS) }; Text("Your launcher will ask you to confirm. Swipe up or down to scroll through all four pages of the same widget.", color = Color(Design.Grey)) }
+            else -> { WidgetPreview(WidgetKind.STATS, state.summary, Modifier.fillMaxWidth(.8f)); Action("Add Step Counter widget") { pin(WidgetKind.STATS) }; Text("Your launcher will ask you to confirm. The square widget is fixed at 2 × 2. Tap its top or bottom edge to turn between four pages; tap the centre to open the app.", color = Color(Design.Grey)) }
         }
         Action(if (page == 2) "Let's walk →" else if (page == 0) "Continue →" else "Keep this goal →") { if (page < 2) page++ else model.finishSetup() }
         TextButton({ model.finishSetup() }) { Text("Set up later") }
