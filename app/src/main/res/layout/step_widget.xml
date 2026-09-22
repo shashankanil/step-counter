@@ -1,34 +1,15 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="@dimen/widget_page_size"
-    android:layout_height="@dimen/widget_page_size"
-    android:layout_gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:background="@drawable/widget_surface"
-    android:clipChildren="true">
-    <AdapterViewFlipper
-        android:id="@+id/step_flipper"
+    android:clipChildren="true"
+    android:clipToPadding="true">
+    <StackView
+        android:id="@+id/step_stack"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:inAnimation="@animator/page_in"
-        android:outAnimation="@animator/page_out"
-        android:autoStart="false"
-        android:animateFirstView="false"
+        android:padding="0dp"
+        android:clipChildren="true"
+        android:clipToPadding="true"
         android:loopViews="true" />
-    <ImageView
-        android:id="@+id/previous_page"
-        android:layout_width="match_parent"
-        android:layout_height="32dp"
-        android:layout_gravity="top"
-        android:background="@android:color/transparent"
-        android:contentDescription="@string/widget_previous_page"
-        android:clickable="true"
-        android:focusable="true" />
-    <ImageView
-        android:id="@+id/next_page"
-        android:layout_width="match_parent"
-        android:layout_height="32dp"
-        android:layout_gravity="bottom"
-        android:background="@android:color/transparent"
-        android:contentDescription="@string/widget_next_page"
-        android:clickable="true"
-        android:focusable="true" />
 </FrameLayout>

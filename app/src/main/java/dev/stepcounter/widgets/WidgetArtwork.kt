@@ -13,7 +13,7 @@ enum class WidgetKind(val title: String) {
 
 /** Original geometric artwork. No bundled typeface or third-party brand assets. */
 object WidgetArtwork {
-    fun render(kind: WidgetKind, summary: StepSummary, size: Int = 480, comparison: org.json.JSONObject? = null, targetName: String = ""): Bitmap {
+    fun render(kind: WidgetKind, summary: StepSummary, size: Int = 480, comparison: org.json.JSONObject? = null, targetName: String = "", walkFrame: Int = 0): Bitmap {
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val c = Canvas(bitmap)
         c.scale(size / 200f, size / 200f)
@@ -26,9 +26,15 @@ object WidgetArtwork {
             c.drawText(s, x, y, p)
         }
         fun figure(x: Float, y: Float, pitch: Float) {
-            listOf(2 to 0, 3 to 0, 2 to 1, 3 to 1, 1 to 2, 2 to 2, 3 to 2,
-                0 to 3, 2 to 3, 4 to 3, 2 to 4, 2 to 5, 1 to 6, 3 to 6,
-                1 to 7, 4 to 7, 0 to 8, 4 to 8, 5 to 8).forEach { (dx, dy) ->
+            val body = listOf(2 to 0, 3 to 0, 2 to 1, 3 to 1, 1 to 2, 2 to 2, 3 to 2,
+                2 to 3, 2 to 4, 2 to 5)
+            val limbs = when (Math.floorMod(walkFrame, 4)) {
+                1 -> listOf(1 to 3, 3 to 3, 1 to 4, 3 to 4, 2 to 6, 3 to 6, 2 to 7, 3 to 7, 1 to 8, 3 to 8)
+                2 -> listOf(0 to 3, 4 to 3, 3 to 6, 1 to 6, 3 to 7, 0 to 7, 4 to 8, 0 to 8, -1 to 8)
+                3 -> listOf(1 to 3, 3 to 3, 0 to 4, 4 to 4, 1 to 6, 2 to 6, 1 to 7, 2 to 7, 1 to 8, 3 to 8)
+                else -> listOf(0 to 3, 4 to 3, 1 to 6, 3 to 6, 1 to 7, 4 to 7, 0 to 8, 4 to 8, 5 to 8)
+            }
+            (body + limbs).forEach { (dx, dy) ->
                 dot(x + dx * pitch, y + dy * pitch, pitch * .39f)
             }
         }

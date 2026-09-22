@@ -14,22 +14,15 @@ Minimum API 26; Health Connect needs a supported Android 9+ device. The app read
 
 ## The widget
 
-Add **Step Counter** from the launcher or Home → Home screen widgets. Tap the thin top or bottom edge of the tile to move between four snap pages:
+Add **Step Counter** from the launcher or Home → Home screen widgets. Swipe up or down to snap between **Walk**, **Stats**, **Month** and **Compare**. Tap an item to open the app. There are no edge tap overlays, arrows, dots or letter chips. The square requests a fixed 2 × 2 allocation; launcher cell dimensions vary.
 
-1. **Walk** — dotted walker on a progress path.
-2. **Stats** — today's steps and previous seven completed days' average.
-3. **Month** — Monday-first calendar; red today, white goal reached, grey activity.
-4. **Comparison** — you and a selected friend or group, simple bars and fetched timestamp.
+`StackView` handles native vertical fling pagination and looping. Its parent clips children, padding is zero, and both the collection and item fill their allocation. Android's built-in perspective scaling and stacked-card peek can still remain: StackView exposes no public RemoteViews-compatible attribute to disable these transforms. We prioritise working fling-snap navigation. No saved page index or displayed-child update interferes with launcher navigation. See [StackView API](https://developer.android.com/reference/android/widget/StackView).
 
-No profile/login letter chips, arrow buttons or page dots appear in the widget. The transparent top and bottom page-turn targets are each 32dp tall; the centre remains tappable artwork and opens the app with a short tap. The square widget requests 2 × 2 cells (minimum 140dp) with resizing locked; exact cell dimensions depend on the launcher.
+API 31+ uses `RemoteViews.RemoteCollectionItems`; older devices use `StepPageService` / `RemoteViewsFactory`, both targeting `step_stack` with stable item IDs and a tap PendingIntent template. **Step Counter Circle** keeps its single ImageView layout and independent resizing. Artwork is capped at 420 px per page.
 
-`AdapterViewFlipper` provides discrete snap pagination: one full page at rest, with a 250ms vertical slide between pages. Incoming artwork slides from below and outgoing artwork slides upwards. Both next and previous use that same animation pair. Flipper requires `ObjectAnimator` resources, which cannot express legacy translate animation distances such as `100%p`; the widget uses a fixed 140dp square surface and matching ±140dp travel distance instead (one full page). [AOSP AdapterViewAnimator animation loading](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/main/core/java/android/widget/AdapterViewAnimator.java).
+Walk and Circle use four dotted walking poses after today's Health Connect total increases against the previous observed total. SharedPreferences retain the total, local day/time zone, increase timestamp and frame. The first observation establishes a baseline; missing data, decreasing totals and day/time-zone changes reset it. Equal snapshots never extend activity. Animation targets four updates per second and expires 45 seconds after the latest increase, stopping early when the screen is off or widgets are removed. Health Connect sync is not a live step sensor.
 
-AOSP Flipper has no fling-swipe handling: tap the invisible edge targets to turn pages. `StackView` was rejected because of its perspective fan/peek of other cards; `ListView` was rejected because it allows free/partial scrolling. There is no full-surface touch overlay. Each widget saves its page index in SharedPreferences, wraps from Comparison to Walk (and back), restores it on data updates, and clears it when deleted. Page turns use partial RemoteViews updates; data refreshes publish the full widget.
-
-API 31+ uses `RemoteViews.RemoteCollectionItems`; older devices retain `StepPageService` / `RemoteViewsFactory`. Both read the same `StepRepository` snapshot and refresh after foreground/WorkManager sync. Collection IDs remain stable across updates. [Android collection widget documentation](https://developer.android.com/develop/ui/views/appwidgets/collections).
-
-**Step Counter Circle** remains an independently pinnable, single-page provider: a walker inside a progress ring, transparent corners and a circular picker preview. Circle still supports horizontal and vertical resizing (2 × 2 through roughly 4 × 4, launcher permitting). Options changes redraw Canvas artwork at a size derived from the allocation, capped at 420 px per page to bound bitmap memory. Rectangular allocations preserve artwork proportions. Both providers refresh through `updateWidgets`.
+Sub-second ticks use one unique, bounded WorkManager coroutine (expedited on API 31+ when quota permits); Android alarms cannot reliably schedule 250 ms broadcasts. A non-waking AlarmManager expiry broadcast restores the resting pose if the process is killed (delivery may be delayed). No exact-alarm permission, wake lock or foreground service is used. WorkManager scheduling, Android process limits and launcher redraw speed can delay, shorten or slow animation; it resumes on a refresh while the increase is still recent. See [Android timing guidance](https://developer.android.com/develop/background-work/services/alarms).
 
 ## Google identity
 
@@ -120,11 +113,12 @@ Health sync re-reads 30 days, retaining at most 63 local calendar days. Missing 
 
 ## Verification and remaining device checks
 
-Android debug assembly, eight domain unit tests and lint are release checks. Server tests include existing auth checks and an end-to-end social route test using an embedded PostgreSQL engine (PGlite), applying both real migrations and testing requests, access control, groups, consent, missing totals, idempotent uploads and deletion.
+Android debug assembly, domain unit tests and lint are release checks. Server tests include existing auth checks and an end-to-end social route test using an embedded PostgreSQL engine (PGlite), applying both real migrations and testing requests, access control, groups, consent, missing totals, idempotent uploads and deletion.
 
 No Android device is attached in this environment. Before release, exercise:
 
-- Launcher top/bottom edge taps advance exactly one full page and wrap through all four pages with a vertical slide; no partial scrolling, stacked peek or visible controls. Check centre taps open the app, independent page retention across data refreshes/process restart, deletion cleanup, square resize lock, unchanged single-page Circle resizing and TalkBack on pre-31 and API 31+ devices. Flipper does not support fling-swipe gestures.
+- On pre-31 and API 31+ launchers, flick vertically through all four pages and wrap, tap items to open, and check page retention during artwork refresh, fan/peek clipping, fixed square sizing, unchanged Circle resizing and TalkBack instructions.
+- Increase today's Health Connect count after a baseline sync: Walk and Circle should move at roughly 4 fps, settle after 45 seconds with no increase, and stop when the screen turns off. Check equal totals, missing data, date rollover, widget removal and process death. These launcher/device behaviours are not verified by JVM tests.
 - Real Google account selection, backend-offline local identity, then online Better Auth exchange.
 - Two real accounts: request/accept, group join, consent, uploaded comparisons and offline opt-out retry.
 - Health Connect denial/revocation, background access, date rollover and time-zone changes.

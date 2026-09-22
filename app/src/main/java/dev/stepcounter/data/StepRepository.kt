@@ -44,6 +44,7 @@ class StepRepository(private val context: Context) {
         if (background && (!health.backgroundSupported() || health.backgroundPermission !in permissions)) {
             status("Open app to refresh"); return@withLock false
         }
+        dev.stepcounter.widgets.WalkAnimation.noteSteps(context, snapshot())
         val today = LocalDate.now()
         val zone = ZoneId.systemDefault()
         val now = System.currentTimeMillis()
@@ -59,6 +60,7 @@ class StepRepository(private val context: Context) {
         }
         prefs.edit().putString("zone", zone.id).apply()
         status(if (health.backgroundPermission in permissions) "Synced · Health Connect" else "Synced · refresh in app")
+        dev.stepcounter.widgets.updateWidgets(context)
         try {
             val social = dev.stepcounter.data.social.SocialRepository(context)
             social.sync(snapshot())
