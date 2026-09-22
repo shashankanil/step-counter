@@ -106,7 +106,8 @@ private suspend fun publish(context: Context, ids: IntArray, circle: Boolean = f
             }
             displayPage(preferences(context).getInt("page_$id", 0))
             listOf(R.id.previous_page to -1, R.id.next_page to 1).forEach { (view, delta) ->
-                setOnClickPendingIntent(view, PendingIntent.getBroadcast(context, id,
+                val request = id * 10 + if (delta < 0) 0 else 1
+                setOnClickPendingIntent(view, PendingIntent.getBroadcast(context, request,
                     Intent(context, StepWidgetReceiver::class.java).apply {
                         action = FLIP
                         data = Uri.parse("stepcounter://widget/$id/flip/$delta")
