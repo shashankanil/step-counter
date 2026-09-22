@@ -16,7 +16,7 @@ import dev.stepcounter.widgets.WidgetKind
 @Composable fun WidgetsScreen(summary: StepSummary, pin: (WidgetKind) -> Unit) {
     Page {
         Heading("Home screen", "Movement, at a glance.")
-        Text("Four quiet pages: Walk, Stats, Month and Compare. Tap the top edge for the previous page or bottom edge for the next page, with a vertical slide. Tap the centre artwork to open the app.", color = Color(Design.Grey))
+        Text("Four quiet pages: Walk, Stats, Month and Compare. Flick vertically to move between pages. A short tap opens the app. No arrows, dots or letter chips.", color = Color(Design.Grey))
         val pager = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 4 })
         androidx.compose.foundation.pager.VerticalPager(state = pager, modifier = Modifier.fillMaxWidth().height(300.dp)) { index ->
             WidgetPreview(WidgetKind.entries[index], summary, Modifier.fillMaxHeight())
@@ -109,7 +109,7 @@ import dev.stepcounter.widgets.WidgetKind
                 }
             }
             1 -> { Tile { Eyebrow("Daily goal"); Matrix(state.summary.goal.toLong()); Action("Set your goal", onClick = goal) }; Text("Start with something achievable. Change it any time in You.", color = Color(Design.Grey)) }
-            else -> { WidgetPreview(WidgetKind.STATS, state.summary, Modifier.fillMaxWidth(.8f)); Action("Add Step Counter widget") { pin(WidgetKind.STATS) }; Text("Your launcher will ask you to confirm. The square widget is fixed at 2 × 2. Tap its top or bottom edge to turn between four pages; tap the centre to open the app.", color = Color(Design.Grey)) }
+            else -> { WidgetPreview(WidgetKind.STATS, state.summary, Modifier.fillMaxWidth(.8f)); Action("Add Step Counter widget") { pin(WidgetKind.STATS) }; Text("Your launcher will ask you to confirm. The square widget is fixed at 2 × 2. Flick vertically through Walk, Stats, Month and Compare; tap to open the app.", color = Color(Design.Grey)) }
         }
         Action(if (page == 2) "Let's walk →" else if (page == 0) "Continue →" else "Keep this goal →") { if (page < 2) page++ else model.finishSetup() }
         TextButton({ model.finishSetup() }) { Text("Set up later") }

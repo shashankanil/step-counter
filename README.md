@@ -14,11 +14,15 @@ Minimum API 26; Health Connect needs a supported Android 9+ device. The app read
 
 ## The widget
 
-Add **Step Counter** from the launcher or Home → Home screen widgets. Swipe up or down to snap between **Walk**, **Stats**, **Month** and **Compare**. Tap an item to open the app. There are no edge tap overlays, arrows, dots or letter chips. The square requests a fixed 2 × 2 allocation; launcher cell dimensions vary.
+Add **Step Counter** from the launcher or Home → Home screen widgets. Flick vertically between **Walk**, **Stats**, **Month** and **Compare**. A short tap opens the app. There are no edge tap overlays, arrows, dots or letter chips. The square requests a fixed 2 × 2 allocation; launcher cell dimensions vary.
 
-`StackView` handles native vertical fling pagination and looping. Its parent clips children, padding is zero, and both the collection and item fill their allocation. Android's built-in perspective scaling and stacked-card peek can still remain: StackView exposes no public RemoteViews-compatible attribute to disable these transforms. We prioritise working fling-snap navigation. No saved page index or displayed-child update interferes with launcher navigation. See [StackView API](https://developer.android.com/reference/android/widget/StackView).
+The square widget renders **one full-bleed page** as a single `ImageView` (artwork from `WidgetArtwork`). It does not use `StackView` (which fans and peeks overlapping pages) or a free-scrolling `ListView`.
 
-API 31+ uses `RemoteViews.RemoteCollectionItems`; older devices use `StepPageService` / `RemoteViewsFactory`, both targeting `step_stack` with stable item IDs and a tap PendingIntent template. **Step Counter Circle** keeps its single ImageView layout and independent resizing. Artwork is capped at 420 px per page.
+RemoteViews cannot perform a flat vertical fling-snap without StackView's collection gestures, so page changes use a common App Widget pattern: a nearly invisible translucent trampoline activity (`WidgetSwipeActivity`). A widget tap starts that activity (no title, excluded from recents, no enter/exit animation). A vertical fling advances or retreats the persisted page index for that `appWidgetId` and refreshes the widget; a short tap (or a brief timeout with no follow-up gesture) opens `MainActivity` instead. Page index is stored in SharedPreferences per widget id and cleared when the widget is removed.
+
+**Trampoline caveats:** some OEMs briefly flash the translucent window or delay activity start; a fling that the launcher treats as a cancelled click never reaches the trampoline—flick again on the widget. Gesture delivery varies by launcher. Prefer a decisive vertical flick; a short tap still opens the app.
+
+**Step Counter Circle** keeps its single ImageView layout, walk animation and independent resizing. Artwork is capped at 420 px per page.
 
 Walk and Circle use four dotted walking poses after today's Health Connect total increases against the previous observed total. SharedPreferences retain the total, local day/time zone, increase timestamp and frame. The first observation establishes a baseline; missing data, decreasing totals and day/time-zone changes reset it. Equal snapshots never extend activity. Animation targets four updates per second and expires 45 seconds after the latest increase, stopping early when the screen is off or widgets are removed. Health Connect sync is not a live step sensor.
 
@@ -103,7 +107,7 @@ All social routes require a valid session; Android sends `Authorization: Bearer 
 ## Data and app structure
 
 - `ui/`: Home, Together, You, secondary History/Home screen destinations and onboarding.
-- `widgets/`: square and circle providers, backwards-compatible collection service and shared Canvas artwork.
+- `widgets/`: square and circle providers, swipe trampoline activity and shared Canvas artwork.
 - `data/auth/`: Credential Manager, encrypted identity/session storage.
 - `data/social/`: authenticated API access, scoped consent, target and comparison cache.
 - `data/health/`, `data/db/`, `data/StepRepository.kt`: Health Connect aggregate reads and local Room cache.
@@ -117,10 +121,10 @@ Android debug assembly, domain unit tests and lint are release checks. Server te
 
 No Android device is attached in this environment. Before release, exercise:
 
-- On pre-31 and API 31+ launchers, flick vertically through all four pages and wrap, tap items to open, and check page retention during artwork refresh, fan/peek clipping, fixed square sizing, unchanged Circle resizing and TalkBack instructions.
+- On pre-31 and API 31+ launchers, flick vertically through all four pages and wrap, tap to open, confirm only one page is visible (no fan/peek mash), page retention during walk animation, fixed square sizing, unchanged Circle resizing and TalkBack instructions. Note trampoline flash/gesture quirks on the OEM launcher under test.
 - Increase today's Health Connect count after a baseline sync: Walk and Circle should move at roughly 4 fps, settle after 45 seconds with no increase, and stop when the screen turns off. Check equal totals, missing data, date rollover, widget removal and process death. These launcher/device behaviours are not verified by JVM tests.
 - Real Google account selection, backend-offline local identity, then online Better Auth exchange.
 - Two real accounts: request/accept, group join, consent, uploaded comparisons and offline opt-out retry.
 - Health Connect denial/revocation, background access, date rollover and time-zone changes.
 
-Live Google OAuth and a deployed Postgres-backed service remain unverified. The server is a demo scaffold: group removal, friend removal/blocking, abuse controls and account deletion are not yet implemented. No GitHub release is created and no APK is copied as part of this work.
+Live Google OAuth and a deployed Postgres-backed service remain unverified. The server is a demo scaffold: group removal, friend removal/blocking, abuse controls and account deletion are not yet implemented. 

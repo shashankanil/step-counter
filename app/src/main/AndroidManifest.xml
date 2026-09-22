@@ -11,6 +11,16 @@
 <activity android:name=".ui.PrivacyActivity" android:exported="true">
 <intent-filter><action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" /></intent-filter>
 </activity>
+<activity
+    android:name=".widgets.WidgetSwipeActivity"
+    android:exported="false"
+    android:excludeFromRecents="true"
+    android:noHistory="true"
+    android:taskAffinity=""
+    android:theme="@style/Theme.StepCounter.WidgetSwipe"
+    android:finishOnTaskLaunch="true"
+    android:documentLaunchMode="never"
+    android:autoRemoveFromRecents="true" />
 <activity-alias android:name="ViewPermissionUsageActivity" android:exported="true" android:targetActivity=".ui.PrivacyActivity" android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
 <intent-filter><action android:name="android.intent.action.VIEW_PERMISSION_USAGE" /><category android:name="android.intent.category.HEALTH_PERMISSIONS" /></intent-filter>
 </activity-alias>
@@ -19,5 +29,4 @@
 <meta-data android:name="android.appwidget.provider" android:resource="@xml/walk_widget" /></receiver>
 <receiver android:name=".widgets.CircleWidgetReceiver" android:exported="false" android:label="@string/circle_name"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/circle_widget" /></receiver>
 <receiver android:name=".widgets.WalkTickReceiver" android:exported="false" />
-<service android:name=".widgets.StepPageService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false" />
 </application></manifest>
